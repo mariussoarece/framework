@@ -13,7 +13,7 @@
 \set u8 '''88888888-8888-8888-8888-888888888888'''
 
 create schema test;
-grant usage on schema test to authenticated;
+grant usage on schema test to authenticated, service_role;
 
 create function test.ok(cond boolean, msg text) returns void language plpgsql as $$
 begin
@@ -36,7 +36,7 @@ begin
   raise exception 'FAILED: % (no error)', msg;
 end $$;
 
-grant execute on all functions in schema test to authenticated;
+grant execute on all functions in schema test to authenticated, service_role;
 
 -- log in as a user: role authenticated + token claims
 create function test.claims(u uuid, email text) returns void language sql as $$
@@ -161,13 +161,50 @@ reset role; select test.claims(:u4, 'client.b@example.com'); set role authentica
 select test.fails($$select public.request_booking(current_setting('test.slot')::timestamptz)$$,
                   'slot_unavailable', 'client of B cannot book in A''s timetable');
 
-reset role; select test.claims(:u1, 'owner.a@example.com'); set role authenticated;
+reset role;
+select test.ok((select payment_status from public.bookings limit 1) = 'requires_payment',
+               'a paid slot waits for the card');
+select test.ok((select commission_percent from public.organizations where join_code = 'yogawithmarius') = 10
+               and (select commission_percent from public.organizations where join_code = 'karatedojo') = 0,
+               'commission follows the plan (10% commission plan, 0% otherwise)');
+select test.claims(:u1, 'owner.a@example.com'); set role authenticated;
+select test.fails($$select public.decide_booking((select id from public.bookings limit 1), true)$$,
+                  'payment_pending', 'owner cannot accept before the card is authorized');
+reset role;
+update public.bookings set payment_status = 'authorized';   -- the Stripe webhook
+select test.claims(:u1, 'owner.a@example.com'); set role authenticated;
 select test.ok((select status from public.decide_booking((select id from public.bookings limit 1), true)) = 'accepted',
                'owner accepts the booking');
+select test.fails($$select * from public.events$$, 'permission denied', 'app users cannot read the event queue');
+reset role;
+select test.ok((select array_agg(type order by id) from public.events where type like 'booking.%')
+               = array['booking.created', 'booking.payment', 'booking.status'],
+               'booking events are queued for the server');
+select test.ok((select count(*) from public.events where type = 'media.approved') = 1, 'media approval is queued');
+set role service_role;
+select test.ok((select count(*) from public.claim_events(100)) >= 4, 'server claims events');
+select public.finish_event((select min(id) from public.events), null);
+select test.ok((select count(*) from public.claim_events(100)) = 0, 'claimed events are leased, not handed out twice');
+reset role;
+select test.ok((select done_at is not null from public.events order by id limit 1), 'finished event is marked done');
+select test.claims(:u1, 'owner.a@example.com'); set role authenticated;
+select test.fails($$select public.claim_events(1)$$, 'permission denied', 'app users cannot claim events');
 select test.ok((select count(*) from public.profiles) = 3, 'owner sees own profile and both clients');
 
 reset role; select test.claims(:u2, 'owner.b@example.com'); set role authenticated;
 select test.ok((select count(*) from public.bookings) = 0, 'owner B sees none of A''s bookings');
+
+-- ---------------------------------------------------------------- expiry
+reset role;
+insert into public.bookings (organization_id, client_id, starts_at, ends_at, price_cents, payment_status, created_at)
+select organization_id, id, now() + interval '2 days', now() + interval '2 days 1 hour', 2000,
+       'requires_payment', now() - interval '31 minutes'
+from public.profiles where id = :u4;
+set role service_role;
+select test.ok(public.expire_bookings() = 1, 'unpaid booking expires after 30 minutes');
+reset role;
+select test.ok((select status || '/' || cancelled_by from public.bookings where client_id = :u4) = 'cancelled/system',
+               'expired booking is cancelled by the system');
 
 -- ---------------------------------------------------------------- closing an organization
 reset role;

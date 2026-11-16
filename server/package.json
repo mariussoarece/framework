@@ -1,0 +1,13 @@
+{
+  "name": "framework-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Node.js server: media uploads and processing, push, email, Stripe Connect payments, account deletion",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test"
+  },
+  "dependencies": {}
+}

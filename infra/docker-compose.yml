@@ -6,8 +6,8 @@
 #   auth     Supabase Auth (GoTrue): sign-up, login, Google/Apple, password reset
 #   rest     PostgREST: the automatic API over the database (Supabase's REST layer)
 #   nginx    HTTPS entry point: /auth/v1, /rest/v1, /media (signed links)
+#   api      Node.js server: uploads, FFmpeg, signed links, push, email, Stripe, account deletion
 #   pgadmin  database admin, only on 127.0.0.1:5050 (open it through an SSH tunnel)
-# Added in later steps: api (Node.js: payments, push, emails, media worker).
 
 name: framework
 
@@ -80,10 +80,24 @@ services:
       PGRST_DB_USE_LEGACY_GUCS: "false"
       PGRST_OPENAPI_MODE: disabled
 
+  api:
+    build: ../server
+    restart: unless-stopped
+    depends_on: [auth, rest]
+    env_file: .env
+    environment:
+      PUBLIC_URL: https://${DOMAIN}
+      REST_URL: http://rest:3000
+      AUTH_URL: http://auth:9999
+      MEDIA_ROOT_IN_CONTAINER: /srv/media
+    volumes:
+      - ${MEDIA_ROOT}:/srv/media
+      - ./secrets:/run/secrets:ro      # AuthKey_XXXX.p8 (Apple), firebase-service-account.json (Google)
+
   nginx:
     image: nginx:${NGINX_VERSION}
     restart: unless-stopped
-    depends_on: [auth, rest]
+    depends_on: [auth, rest, api]
     ports:
       - "80:80"
       - "443:443"

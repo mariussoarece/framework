@@ -4,3 +4,5 @@ node_modules/
 dist/
 *.dump
 .DS_Store
+infra/secrets/*
+!infra/secrets/README.md

@@ -37,6 +37,14 @@ server {
         proxy_pass http://rest:3000/;
     }
 
+    # Node server: uploads, signed links, payments, account deletion, Stripe webhook
+    location /api/ {
+        proxy_pass http://api:8080;
+        proxy_request_buffering off;   # stream big uploads straight to the server
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+    }
+
     # Published pictures and videos.
     # Links look like /media/<org>/<file>.mp4?md5=<hash>&expires=<unix time>
     # hash = base64url(md5("<expires>/media/<org>/<file>.mp4 <MEDIA_LINK_SECRET>"))

@@ -13,7 +13,7 @@ Full specification: *YogaByTheSofa Platform — App Specification* (Claude doc).
 | `db/migrations` | PostgreSQL tables, row-level security, API functions, seed | Done |
 | `db/tests` | Tests proving organizations can't see each other's data | Done |
 | `infra` | Docker Compose for the VPS: PostgreSQL, Supabase Auth, PostgREST, Nginx, pgAdmin, backups | Done |
-| `server` | Node.js: Stripe Connect, push notifications, emails, FFmpeg media worker, account deletion | Next |
+| `server` | Node.js (no packages): uploads, FFmpeg worker, signed media links, push, email, Stripe Connect, account deletion | Done |
 | `app` | React Native (Expo) app for iOS and Android, English and Romanian | Next |
 
 ## How the pieces fit
@@ -34,6 +34,20 @@ Full specification: *YogaByTheSofa Platform — App Specification* (Claude doc).
 | `review_media(p_media, p_approve, p_reason)` | super admin | Approves or rejects an upload |
 | `set_default_organization(p_org)` | super admin | Moves the default flag |
 
+## Server API (`/api`, see [server/README.md](server/README.md))
+
+| Endpoint | Who | What |
+| --- | --- | --- |
+| `POST /api/media?kind=image\|video[&workout_id=]` | owner | Upload a file (raw body); stored as pending |
+| `GET /api/media/:id/url` | member | Signed links: `image`, `video_720`, `video_1080` |
+| `GET /api/admin/media/:id/original` | super admin | Preview a pending upload |
+| `POST /api/stripe/connect` | owner | Link to set up payouts with Stripe |
+| `GET /api/stripe/status` | owner | Can the organization take payments? |
+| `POST /api/bookings/:id/pay` | client | Payment sheet secret for a booking |
+| `POST /api/stripe/webhook` | Stripe | Payment updates |
+| `DELETE /api/account` | anyone | Delete my account (owner: closes the organization, emails clients) |
+| `POST /api/admin/organizations/:id/close` | super admin | Close an organization |
+
 ## Run the database tests locally
 
 ```bash
@@ -41,6 +55,15 @@ createdb app_test
 DB_URL=postgresql://localhost/app_test ./infra/scripts/migrate.sh
 psql postgresql://localhost/app_test -v ON_ERROR_STOP=1 -f db/tests/security_test.sql
 # ends with: All tests passed.
+```
+
+## Run the server tests
+
+```bash
+cd server
+node --test                                                   # unit + FFmpeg tests
+createdb srv_test && DB_URL=postgresql://localhost/srv_test ../infra/scripts/migrate.sh
+TEST_DB_URL=postgresql://localhost/srv_test node --test       # adds the end-to-end test
 ```
 
 ## Deploy

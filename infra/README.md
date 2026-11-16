@@ -14,6 +14,7 @@ cd /opt/framework
 
 # Folders for media and backups
 mkdir -p /srv/media/uploads /srv/media/published /srv/backups
+chown -R 1000:1000 /srv/media      # the Node server runs as uid 1000
 
 # Firewall: only SSH, HTTP, HTTPS from outside
 ufw allow OpenSSH && ufw allow 80 && ufw allow 443 && ufw enable
@@ -50,11 +51,35 @@ docker compose --env-file .env up -d
 cd .. && ./infra/scripts/migrate.sh        # creates tables, security rules, YogaByTheSofa
 ```
 
-Check: `curl https://api.yourdomain.com/auth/v1/health` answers with the login service's version.
+Check:
+- `curl https://api.yourdomain.com/auth/v1/health` answers with the login service's version.
+- `curl https://api.yourdomain.com/api/health` answers `{"ok":true}`.
+
+After changing server code: `docker compose --env-file .env up -d --build api`.
 
 Run `./infra/scripts/migrate.sh` again after every `git pull`; it only applies new files.
 
-## 5. Backups
+## 5. Stripe, push and email
+
+**Stripe** (start with test keys):
+1. In the Stripe dashboard turn on **Connect** (Express accounts).
+2. Developers → API keys → put the secret and publishable keys in `.env`.
+3. Developers → Webhooks → add endpoint `https://api.yourdomain.com/api/stripe/webhook` with the events
+   `payment_intent.amount_capturable_updated`, `payment_intent.succeeded`, `payment_intent.canceled`, `charge.refunded`.
+   Copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
+
+**Apple push:** Apple Developer → Keys → create a key with *Apple Push Notifications service*. Save the `.p8` file as
+`infra/secrets/AuthKey.p8`, fill `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_BUNDLE_ID` (the app's bundle id).
+Set `APNS_PRODUCTION=true` for App Store / TestFlight builds.
+
+**Android push:** Firebase console → project settings → Service accounts → generate a private key. Save it as
+`infra/secrets/firebase-service-account.json`. (Firebase is used only to deliver notifications.)
+
+**Email:** any SMTP provider; the same settings are used for login emails and for "organization closed" emails.
+
+Restart after changes: `docker compose --env-file .env up -d`.
+
+## 6. Backups
 
 ```bash
 crontab -e
@@ -69,7 +94,7 @@ Restore a dump:
 docker compose --env-file .env exec -T db pg_restore -U postgres -d app --clean < /srv/backups/db/app_<date>.dump
 ```
 
-## 6. pgAdmin
+## 7. pgAdmin
 
 pgAdmin listens only on the VPS itself. From your computer:
 
@@ -79,7 +104,7 @@ ssh -L 5050:127.0.0.1:5050 root@your-vps
 
 Then open http://localhost:5050, log in with `PGADMIN_EMAIL` / `PGADMIN_PASSWORD`, and add a server: host `db`, user `postgres`, password `POSTGRES_PASSWORD`.
 
-## 7. Make yourself super admin and owner of YogaByTheSofa
+## 8. Make yourself super admin and owner of YogaByTheSofa
 
 You use two accounts: one super admin, one owner for YogaByTheSofa.
 
