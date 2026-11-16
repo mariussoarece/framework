@@ -1,0 +1,64 @@
+# The nginx image fills in ${DOMAIN} and ${MEDIA_LINK_SECRET} from the environment.
+
+server {
+    listen 80;
+    server_name ${DOMAIN};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name ${DOMAIN};
+
+    ssl_certificate     /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+
+    client_max_body_size 1g;   # video uploads
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    # Login: sign-up, sign-in, tokens, Google/Apple callbacks
+    location /auth/v1/ {
+        proxy_pass http://auth:9999/;
+    }
+
+    # Database API (rows filtered by row-level security)
+    location /rest/v1/ {
+        proxy_pass http://rest:3000/;
+    }
+
+    # Published pictures and videos.
+    # Links look like /media/<org>/<file>.mp4?md5=<hash>&expires=<unix time>
+    # hash = base64url(md5("<expires>/media/<org>/<file>.mp4 <MEDIA_LINK_SECRET>"))
+    # The API creates these links; a guessed or expired link is refused.
+    location /media/ {
+        secure_link $arg_md5,$arg_expires;
+        secure_link_md5 "$secure_link_expires$uri ${MEDIA_LINK_SECRET}";
+        if ($secure_link = "")  { return 403; }
+        if ($secure_link = "0") { return 410; }
+
+        alias /srv/media/published/;
+        types {
+            video/mp4  mp4;
+            image/jpeg jpg jpeg;
+            image/webp webp;
+            image/png  png;
+        }
+        add_header Cache-Control "private, max-age=3600";
+        # Range requests (seeking, start-before-download) work out of the box.
+    }
+
+    location / {
+        return 404;
+    }
+}

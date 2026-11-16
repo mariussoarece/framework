@@ -1,0 +1,6 @@
+infra/.env
+node_modules/
+.expo/
+dist/
+*.dump
+.DS_Store
