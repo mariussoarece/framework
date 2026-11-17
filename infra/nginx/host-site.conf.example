@@ -1,0 +1,31 @@
+# For a VPS that already runs nginx for other websites (NGINX_MODE=behind-proxy).
+# Install as the host's site for the app's domain:
+#
+#   sudo cp infra/nginx/host-site.conf.example /etc/nginx/sites-available/framework-api
+#   sudo sed -i 's/api.example.com/<your DOMAIN>/g' /etc/nginx/sites-available/framework-api
+#   sudo ln -s /etc/nginx/sites-available/framework-api /etc/nginx/sites-enabled/
+#   sudo nginx -t && sudo systemctl reload nginx
+#   sudo certbot --nginx -d <your DOMAIN>     # adds HTTPS to this file automatically
+#
+# The port (8088) must match NGINX_HTTP_BIND in infra/.env.
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name api.example.com;
+
+    client_max_body_size 1g;           # video uploads
+
+    location / {
+        proxy_pass http://127.0.0.1:8088;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_request_buffering off;       # stream uploads
+        proxy_buffering off;               # stream videos
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+    }
+}

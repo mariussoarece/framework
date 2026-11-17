@@ -36,6 +36,19 @@ node infra/scripts/gen-keys.mjs >> infra/.env  # passwords and keys
 
 ## 3. HTTPS certificate (once, then auto-renew)
 
+> **Server already running nginx for other websites?** Use *behind-proxy* mode instead of this section:
+> 1. In `infra/.env`: `NGINX_MODE=behind-proxy`, `NGINX_HTTP_BIND=127.0.0.1:8088`, `NGINX_HTTPS_BIND=127.0.0.1:8443`.
+> 2. Install the host site for the app's domain and get its certificate with the host's certbot:
+>    ```bash
+>    sudo cp infra/nginx/host-site.conf.example /etc/nginx/sites-available/framework-api
+>    sudo sed -i 's/api.example.com/api.yourdomain.com/g' /etc/nginx/sites-available/framework-api
+>    sudo ln -s /etc/nginx/sites-available/framework-api /etc/nginx/sites-enabled/
+>    sudo nginx -t && sudo systemctl reload nginx
+>    sudo certbot --nginx -d api.yourdomain.com
+>    ```
+> Your other websites keep working; only `api.yourdomain.com` goes to the app.
+
+
 ```bash
 apt install -y certbot
 certbot certonly --standalone -d api.yourdomain.com      # before nginx is running

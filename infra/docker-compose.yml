@@ -98,14 +98,16 @@ services:
     image: nginx:${NGINX_VERSION}
     restart: unless-stopped
     depends_on: [auth, rest, api]
+    # standalone:   this container owns ports 80/443 and does HTTPS itself
+    # behind-proxy: the VPS's own nginx does HTTPS and forwards to NGINX_HTTP_BIND (127.0.0.1:8088)
     ports:
-      - "80:80"
-      - "443:443"
+      - "${NGINX_HTTP_BIND:-80}:80"
+      - "${NGINX_HTTPS_BIND:-443}:443"
     environment:
       DOMAIN: ${DOMAIN}
       MEDIA_LINK_SECRET: ${MEDIA_LINK_SECRET}
     volumes:
-      - ./nginx/templates:/etc/nginx/templates:ro
+      - ./nginx/${NGINX_MODE:-standalone}:/etc/nginx/templates:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - certbot-www:/var/www/certbot
       - ${MEDIA_ROOT}/published:/srv/media/published:ro
