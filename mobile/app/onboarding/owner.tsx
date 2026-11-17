@@ -1,6 +1,6 @@
 // Owner path: name the organization and choose how clients pay.
 import React, { useState } from 'react';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { Button, Choice, Field, Message, Muted, Screen, Title } from '../../src/components/ui';
 import { useI18n } from '../../src/i18n/I18nProvider';
 import { supabase } from '../../src/lib/supabase';
@@ -9,11 +9,14 @@ import type { Plan } from '../../src/lib/types';
 
 export default function OwnerOnboarding() {
   const { t, tError } = useI18n();
-  const { refresh, setPendingRole, signOut } = useSession();
+  const { profile, org, refresh, setPendingRole, signOut } = useSession();
   const [name, setName] = useState('');
   const [plan, setPlan] = useState<Plan>('commission');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // already owns an organization (e.g. signed in again after choosing "I run a business")
+  if (profile?.organization_id && org && org.status !== 'closed') return <Redirect href="/" />;
 
   async function create() {
     setError(null);
@@ -26,6 +29,11 @@ export default function OwnerOnboarding() {
       await refresh();
       router.replace('/');
     } catch (err) {
+      if (String((err as Error)?.message).includes('already_owner')) {
+        await refresh();
+        router.replace('/');
+        return;
+      }
       setError(tError(err));
     } finally {
       setBusy(false);

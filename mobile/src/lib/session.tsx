@@ -12,6 +12,7 @@ export type PendingRole = 'client' | 'owner';
 
 type State = {
   ready: boolean;
+  loading: boolean;
   session: Session | null;
   profile: Profile | null;
   org: Organization | null;
@@ -35,28 +36,42 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [buttons, setButtons] = useState<HomeButton[]>([]);
   const [pendingRole, setPending] = useState<PendingRole | null>(null);
 
-  const load = useCallback(async (s: Session | null) => {
-    setSession(s);
-    if (!s) {
-      setProfile(null); setOrg(null); setHome(null); setButtons([]);
-      return;
-    }
-    const { data: p, error } = await supabase.from('profiles').select('*').eq('id', s.user.id).maybeSingle();
-    if (error) throw error;
-    setProfile(p as Profile | null);
-    if (p?.language) setLanguage(pickLanguage(p.language));
+  const [loading, setLoading] = useState(0);
 
-    if (p?.organization_id) {
-      const [o, h, b] = await Promise.all([
-        supabase.from('organizations').select('*').eq('id', p.organization_id).single(),
-        supabase.from('home_settings').select('*').eq('organization_id', p.organization_id).maybeSingle(),
-        supabase.from('home_buttons').select('*').eq('organization_id', p.organization_id).order('position'),
-      ]);
-      setOrg((o.data as Organization) ?? null);
-      setHome((h.data as HomeSettings) ?? null);
-      setButtons((b.data as HomeButton[]) ?? []);
-    } else {
-      setOrg(null); setHome(null); setButtons([]);
+  // Loads everything first, then updates all state at once, so screens never see
+  // a session without its profile (that briefly sent owners to "Create organization").
+  const load = useCallback(async (s: Session | null) => {
+    setLoading((n) => n + 1);
+    try {
+      let p: Profile | null = null;
+      let o: Organization | null = null;
+      let h: HomeSettings | null = null;
+      let b: HomeButton[] = [];
+      if (s) {
+        const pr = await supabase.from('profiles').select('*').eq('id', s.user.id).maybeSingle();
+        if (pr.error) throw pr.error;
+        p = pr.data as Profile | null;
+        if (p?.organization_id) {
+          const [or, hr, br] = await Promise.all([
+            supabase.from('organizations').select('*').eq('id', p.organization_id).single(),
+            supabase.from('home_settings').select('*').eq('organization_id', p.organization_id).maybeSingle(),
+            supabase.from('home_buttons').select('*').eq('organization_id', p.organization_id).order('position'),
+          ]);
+          if (or.error) throw or.error;
+          o = or.data as Organization;
+          h = (hr.data as HomeSettings) ?? null;
+          b = (br.data as HomeButton[]) ?? [];
+        }
+      }
+      setSession(s); setProfile(p); setOrg(o); setHome(h); setButtons(b);
+      if (p?.language) setLanguage(pickLanguage(p.language));
+      // already set up: the "Client / Owner" choice from the welcome screen no longer matters
+      if (p?.organization_id || p?.role === 'super_admin') {
+        setPending(null);
+        await AsyncStorage.removeItem(PENDING_ROLE);
+      }
+    } finally {
+      setLoading((n) => n - 1);
     }
   }, [setLanguage]);
 
@@ -80,7 +95,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, [load]);
 
   const value = useMemo<State>(() => ({
-    ready, session, profile, org, home, buttons, pendingRole,
+    ready, loading: loading > 0, session, profile, org, home, buttons, pendingRole,
     setPendingRole: async (r) => {
       setPending(r);
       if (r) await AsyncStorage.setItem(PENDING_ROLE, r);
@@ -96,7 +111,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setPending(null);
       await load(null);
     },
-  }), [ready, session, profile, org, home, buttons, pendingRole, load]);
+  }), [ready, loading, session, profile, org, home, buttons, pendingRole, load]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

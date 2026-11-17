@@ -4,12 +4,14 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Button, Field, Message, Muted, Screen, Title } from '../src/components/ui';
 import { useI18n } from '../src/i18n/I18nProvider';
 import { supabase } from '../src/lib/supabase';
+import { useSession } from '../src/lib/session';
 
 const validEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
 export default function Auth() {
   const { t, tError } = useI18n();
   const params = useLocalSearchParams<{ role?: string }>();
+  const { refresh } = useSession();
   const [mode, setMode] = useState<'signIn' | 'signUp'>(params.role === 'owner' ? 'signUp' : 'signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,11 +29,12 @@ export default function Auth() {
       if (mode === 'signIn') {
         const { error: err } = await supabase.auth.signInWithPassword({ email: e, password });
         if (err) throw err;
+        await refresh();
         router.replace('/');
       } else {
         const { data, error: err } = await supabase.auth.signUp({ email: e, password });
         if (err) throw err;
-        if (data.session) router.replace('/');
+        if (data.session) { await refresh(); router.replace('/'); }
         else { setInfo(t('auth.checkEmail')); setMode('signIn'); }
       }
     } catch (err) {

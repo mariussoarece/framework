@@ -6,6 +6,6 @@ import { nextRoute, useSession } from '../src/lib/session';
 
 export default function Index() {
   const s = useSession();
-  if (!s.ready) return <Loading />;
+  if (!s.ready || s.loading) return <Loading />;
   return <Redirect href={nextRoute(s) as never} />;
 }
