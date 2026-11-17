@@ -20,7 +20,13 @@
       "en": "./locales/en.json",
       "ro": "./locales/ro.json"
     },
-    "plugins": ["expo-router", "expo-localization"],
+    "plugins": [
+      "expo-router",
+      "expo-localization",
+      "expo-status-bar",
+      "expo-image",
+      "expo-font"
+    ],
     "experiments": {
       "typedRoutes": false
     }
