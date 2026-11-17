@@ -1,9 +1,10 @@
 // Super admin: approve or reject uploaded pictures and videos.
 import React, { useCallback, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import { Button, Message, Muted, Title } from '../src/components/ui';
 import { VideoPlayer } from '../src/components/media';
 import { useI18n } from '../src/i18n/I18nProvider';
@@ -14,7 +15,7 @@ import { DEFAULT_THEME as theme } from '../src/theme/themes';
 
 export default function Admin() {
   const { t, tError, language } = useI18n();
-  const { session } = useSession();
+  const { session, signOut } = useSession();
   const [items, setItems] = useState<PendingMedia[] | null>(null);
   const [reasons, setReasons] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -51,7 +52,17 @@ export default function Admin() {
       <ScrollView contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing}
           onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}>
-        <Title>{t('admin.title')}</Title>
+        <View style={styles.top}>
+          <View style={{ flex: 1 }}><Title>{t('admin.title')}</Title></View>
+          <Pressable onPress={() => router.push('/settings')} hitSlop={10} accessibilityRole="button"
+            accessibilityLabel={t('settings.title')} style={styles.iconBtn}>
+            <Ionicons name="settings-outline" size={22} color={theme.text} />
+          </Pressable>
+          <Pressable onPress={async () => { await signOut(); router.replace('/'); }} hitSlop={10}
+            accessibilityRole="button" accessibilityLabel={t('settings.signOut')} style={styles.iconBtn}>
+            <Ionicons name="log-out-outline" size={22} color={theme.text} />
+          </Pressable>
+        </View>
         <Message text={error} />
         <Muted>{items ? (items.length ? t('admin.pending', { count: items.length }) : t('admin.empty')) : t('common.loading')}</Muted>
 
@@ -79,7 +90,6 @@ export default function Admin() {
           );
         })}
 
-        <Button kind="secondary" label={t('settings.title')} onPress={() => router.push('/settings')} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -87,6 +97,8 @@ export default function Admin() {
 
 const styles = StyleSheet.create({
   content: { padding: 20, gap: 14, paddingBottom: 40 },
+  top: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  iconBtn: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: theme.border },
   card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 14, gap: 10, borderWidth: 1, borderColor: theme.border },
   org: { fontSize: 18, fontWeight: '700', color: theme.text },
   preview: { width: '100%', aspectRatio: 4 / 3, borderRadius: 12, backgroundColor: '#000000' },
