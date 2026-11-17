@@ -55,7 +55,7 @@ export default function WorkoutScreen() {
   const rest = restText(language, w);
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: theme.background }} contentContainerStyle={styles.content}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ flex: 1, backgroundColor: theme.background }} contentContainerStyle={styles.content}>
       <MediaGallery ids={visible} quality={profile?.video_quality ?? 'auto'} theme={theme} />
 
       <Text style={[styles.title, { color: theme.text }]} accessibilityRole="header">{w.name}</Text>

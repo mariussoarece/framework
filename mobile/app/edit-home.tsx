@@ -105,7 +105,7 @@ export default function EditHome() {
   );
 
   return (
-    <Screen>
+    <Screen header>
       <Message text={error} />
 
       <Text style={styles.label}>{t('edit.theme')}</Text>

@@ -10,7 +10,7 @@ export default function Placeholder() {
   const { home } = useSession();
   const theme = themeFor(home?.theme_key);
   return (
-    <Screen theme={theme}>
+    <Screen header theme={theme}>
       <Muted theme={theme}>{t('common.comingSoon')}</Muted>
     </Screen>
   );

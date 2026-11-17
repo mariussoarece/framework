@@ -73,7 +73,7 @@ export default function WorkoutEdit() {
 
   if (profile?.role !== 'owner' || !org) return null;
   // the editor is created once with its starting content, so wait for the workout to load
-  if (!loaded) return <Screen theme={theme}><Muted theme={theme}>{t('common.loading')}</Muted></Screen>;
+  if (!loaded) return <Screen header theme={theme}><Muted theme={theme}>{t('common.loading')}</Muted></Screen>;
   return (
     <Form
       {...{ id, org: org.id, theme, t, tError, name, setName, sets, setSets, mode, setMode, reps, setReps, time, setTime,
@@ -185,7 +185,7 @@ function Form(p: FormProps) {
   const shownExisting = p.existing.filter((m) => !p.removed.includes(m.id));
 
   return (
-    <Screen theme={theme}>
+    <Screen header theme={theme}>
       <Message text={p.error} />
 
       <Field theme={theme} label={t('workout.name')} hint={t('workout.nameHint')} value={p.name}

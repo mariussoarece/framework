@@ -7,14 +7,22 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DEFAULT_THEME, type Theme } from '../theme/themes';
 
-export function Screen({ children, theme = DEFAULT_THEME, scroll = true, style }: {
-  children: React.ReactNode; theme?: Theme; scroll?: boolean; style?: ViewStyle;
+// header: the screen has a navigation header; content must start below it
+// (on newer iOS the header can float over the content).
+export function Screen({ children, theme = DEFAULT_THEME, scroll = true, style, header = false }: {
+  children: React.ReactNode; theme?: Theme; scroll?: boolean; style?: ViewStyle; header?: boolean;
 }) {
   const body = scroll
-    ? <ScrollView contentContainerStyle={[styles.content, style]} keyboardShouldPersistTaps="handled">{children}</ScrollView>
+    ? (
+      <ScrollView contentContainerStyle={[styles.content, style]} keyboardShouldPersistTaps="handled"
+        contentInsetAdjustmentBehavior={header ? 'automatic' : 'never'}>
+        {children}
+      </ScrollView>
+    )
     : <View style={[styles.content, { flex: 1 }, style]}>{children}</View>;
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}
+      edges={header ? ['left', 'right', 'bottom'] : ['top', 'left', 'right', 'bottom']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {body}
       </KeyboardAvoidingView>

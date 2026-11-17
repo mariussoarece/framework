@@ -80,7 +80,7 @@ export default function SectionEdit() {
     : coverStatus === 'rejected' ? t('media.rejected') : undefined;
 
   return (
-    <Screen theme={theme}>
+    <Screen header theme={theme}>
       <Message text={error} />
       <Field theme={theme} label={t('sections.name')} hint={t('sections.nameHint')} value={name}
         onChangeText={setName} maxLength={60} autoFocus={!id} />

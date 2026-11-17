@@ -62,7 +62,7 @@ export default function Settings() {
   ];
 
   return (
-    <Screen>
+    <Screen header>
       <Muted>{t('settings.account', { email: session?.user.email ?? '' })}</Muted>
       <Message text={error} />
 
