@@ -1,0 +1,52 @@
+# Mobile app (iOS and Android)
+
+React Native with Expo and Expo Router, TypeScript, English and Romanian.
+
+## First run on your Mac
+
+You need Node.js 20+ and Xcode (for the iPhone simulator). For Android: Android Studio.
+
+```bash
+cd mobile
+npm run setup                 # installs Expo and all packages in matching versions
+cp .env.example .env          # then fill in:
+                              #   EXPO_PUBLIC_API_URL  = https://<your DOMAIN>
+                              #   EXPO_PUBLIC_ANON_KEY = ANON_KEY from infra/.env
+npx expo run:ios              # builds and opens the iPhone simulator
+```
+
+`npm run setup` updates `package.json` and creates `package-lock.json`; commit both.
+
+Later runs: `npx expo start`, then press `i` (iOS) or `a` (Android).
+
+Checks:
+```bash
+npm run typecheck             # TypeScript
+npm test                      # translations and rich-text tests
+```
+
+## What's in this step
+
+| Screen | File | What it does |
+| --- | --- | --- |
+| Welcome | `app/welcome.tsx` | First launch: "I'm a client" / "I run a business", language switch |
+| Sign in / up | `app/auth.tsx` | Email + password, email confirmation, forgot password |
+| Owner setup | `app/onboarding/owner.tsx` | Organization name (unique) + payment plan, first month free |
+| Client setup | `app/onboarding/client.tsx` | Join with a code, or continue with YogaByTheSofa |
+| Home | `app/home.tsx` | Organization name, theme, background and foreground images, description, the two buttons |
+| Settings | `app/settings.tsx` | Language, video quality, owner's join code, switch organization, sign out, delete my account |
+| Schedule, Workouts, Admin | `app/*.tsx` | Placeholders for the next steps |
+
+| Module | Job |
+| --- | --- |
+| `src/lib/supabase.ts` | Login and database client (talks to `/auth/v1` and `/rest/v1` on your VPS) |
+| `src/lib/session.tsx` | Logged-in user, profile, organization, home page data; decides which screen to show |
+| `src/lib/api.ts` | Calls to the Node server: signed media links (cached), delete account |
+| `src/lib/richtext.ts` + `src/components/RichText.tsx` | Shows the owner's formatted description |
+| `src/i18n/` | English and Romanian texts; errors from the server shown as friendly messages |
+| `src/theme/themes.ts` | Predefined themes (Calm, Forest, Ocean, Sunset, Dojo, Minimal) and button icons |
+
+## Before publishing
+
+- `app.json`: set the real app name, `ios.bundleIdentifier` and `android.package` (now `com.yogabythesofa.app`).
+- Add an app icon and splash screen.

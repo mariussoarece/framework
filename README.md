@@ -14,7 +14,7 @@ Full specification: *YogaByTheSofa Platform — App Specification* (Claude doc).
 | `db/tests` | Tests proving organizations can't see each other's data | Done |
 | `infra` | Docker Compose for the VPS: PostgreSQL, Supabase Auth, PostgREST, Nginx, pgAdmin, backups | Done |
 | `server` | Node.js (no packages): uploads, FFmpeg worker, signed media links, push, email, Stripe Connect, account deletion | Done |
-| `app` | React Native (Expo) app for iOS and Android, English and Romanian | Next |
+| `mobile` | React Native (Expo) app for iOS and Android, English and Romanian | Foundation done: onboarding, login, home page, settings |
 
 ## How the pieces fit
 

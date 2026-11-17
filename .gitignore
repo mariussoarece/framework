@@ -6,3 +6,6 @@ dist/
 .DS_Store
 infra/secrets/*
 !infra/secrets/README.md
+mobile/.env
+mobile/ios/
+mobile/android/

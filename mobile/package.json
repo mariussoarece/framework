@@ -1,0 +1,16 @@
+{
+  "name": "framework-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "setup": "bash ./setup.sh",
+    "start": "expo start",
+    "ios": "expo run:ios",
+    "android": "expo run:android",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/logic.test.mjs"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

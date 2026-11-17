@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "YogaByTheSofa",
+    "slug": "framework",
+    "scheme": "framework",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "com.yogabythesofa.app",
+      "supportsTablet": true,
+      "infoPlist": {
+        "CFBundleAllowMixedLocalizations": true
+      }
+    },
+    "android": {
+      "package": "com.yogabythesofa.app"
+    },
+    "locales": {
+      "en": "./locales/en.json",
+      "ro": "./locales/ro.json"
+    },
+    "plugins": ["expo-router", "expo-localization"],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
