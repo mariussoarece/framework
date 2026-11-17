@@ -23,9 +23,14 @@
     "plugins": [
       "expo-router",
       "expo-localization",
-      "expo-status-bar",
-      "expo-image",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow access to your photos to add pictures and videos to your workouts and home page."
+        }
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": false

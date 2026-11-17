@@ -35,13 +35,27 @@ npm test                      # translations and rich-text tests
 | Client setup | `app/onboarding/client.tsx` | Join with a code, or continue with YogaByTheSofa |
 | Home | `app/home.tsx` | Organization name, theme, background and foreground images, description, the two buttons |
 | Settings | `app/settings.tsx` | Language, video quality, owner's join code, switch organization, sign out, delete my account |
-| Schedule, Workouts, Admin | `app/*.tsx` | Placeholders for the next steps |
+| Edit home page | `app/edit-home.tsx` | Owner: theme, background and front image, description (rich text), button labels, icons and colors |
+| Workouts | `app/workouts.tsx` | Main → sections. Owner: **+ Add section**, reorder (arrows), edit |
+| Section | `app/section/[id].tsx`, `app/section-edit.tsx` | Section → workouts. Owner: big **+ Add workout**; edit name and cover, delete |
+| Workout | `app/workout/[id].tsx` | Pictures/videos on top, sets × reps or time, rest, warning, what to avoid, description |
+| Add / edit workout | `app/workout-edit.tsx` | Name, sets, repetitions **or** time, rest, rich-text description, pictures/videos with upload progress, warning, avoid, sections |
+| Admin | `app/admin.tsx` | Super admin: preview uploads, approve or reject (with a reason for the owner) |
+| Schedule | `app/schedule.tsx` | Placeholder for the next step |
+
+Rich text in Expo Go: bold, italic, underline, strike, lists, links, headings, colors.
+Text alignment and font choice need TenTap's advanced setup and a development build; they come with the payments step.
 
 | Module | Job |
 | --- | --- |
 | `src/lib/supabase.ts` | Login and database client (talks to `/auth/v1` and `/rest/v1` on your VPS) |
 | `src/lib/session.tsx` | Logged-in user, profile, organization, home page data; decides which screen to show |
 | `src/lib/api.ts` | Calls to the Node server: signed media links (cached), delete account |
+| `src/lib/data.ts` | Sections, workouts, home page and approvals in the database |
+| `src/lib/upload.ts` | Streams a picked picture or video to the server, with progress |
+| `src/lib/video.ts` | Picks 720p or 1080p from the client's setting and connection |
+| `src/components/media.tsx` | Photo/video picker, video player, gallery, approval status tiles |
+| `src/components/RichEditor.tsx` | The owner's rich-text editor (TipTap via TenTap) |
 | `src/lib/richtext.ts` + `src/components/RichText.tsx` | Shows the owner's formatted description |
 | `src/i18n/` | English and Romanian texts; errors from the server shown as friendly messages |
 | `src/theme/themes.ts` | Predefined themes (Calm, Forest, Ocean, Sunset, Dojo, Minimal) and button icons |

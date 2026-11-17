@@ -18,8 +18,11 @@ function Spans({ spans, theme }: { spans: Span[]; theme: Theme }) {
           style={{
             fontWeight: s.bold ? '700' : undefined,
             fontStyle: s.italic ? 'italic' : undefined,
-            textDecorationLine: s.underline || s.href ? 'underline' : undefined,
-            color: s.href ? theme.primary : undefined,
+            textDecorationLine: [
+              s.underline || s.href ? 'underline' : '', s.strike ? 'line-through' : '',
+            ].filter(Boolean).join(' ') as 'underline' | 'line-through' | 'underline line-through' || undefined,
+            color: s.href ? theme.primary : s.color,
+            backgroundColor: s.highlight,
             fontFamily: s.fontFamily,
           }}
         >

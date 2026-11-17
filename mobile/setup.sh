@@ -16,7 +16,9 @@ npx expo install \
   react-native-safe-area-context react-native-screens \
   expo-localization expo-image expo-font @expo/vector-icons \
   @react-native-async-storage/async-storage \
-  @supabase/supabase-js react-native-url-polyfill
+  @supabase/supabase-js react-native-url-polyfill \
+  expo-image-picker expo-video expo-file-system expo-network \
+  @10play/tentap-editor react-native-webview
 
 npx expo install --dev typescript @types/react
 

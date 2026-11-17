@@ -7,6 +7,9 @@ export type Span = {
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
+  strike?: boolean;
+  color?: string;
+  highlight?: string;
   href?: string;
   fontFamily?: string;
 };
@@ -28,6 +31,13 @@ export function safeHref(href: unknown): string | undefined {
   return /^(https?:|mailto:)/i.test(href.trim()) ? href.trim() : undefined;
 }
 
+// Accepts #rgb / #rrggbb / rgb(...) colors only.
+export function cssColor(v: unknown): string | undefined {
+  if (typeof v !== 'string') return undefined;
+  const c = v.trim();
+  return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c) || /^rgba?\([\d\s.,%]+\)$/i.test(c) ? c : undefined;
+}
+
 function spansOf(nodes: RichNode[] = []): Span[] {
   const spans: Span[] = [];
   for (const n of nodes) {
@@ -41,9 +51,13 @@ function spansOf(nodes: RichNode[] = []): Span[] {
       if (m.type === 'bold') s.bold = true;
       else if (m.type === 'italic') s.italic = true;
       else if (m.type === 'underline') s.underline = true;
+      else if (m.type === 'strike') s.strike = true;
+      else if (m.type === 'highlight') s.highlight = cssColor(m.attrs?.color) ?? '#FFF3A3';
       else if (m.type === 'link') s.href = safeHref(m.attrs?.href);
-      else if (m.type === 'textStyle' && typeof m.attrs?.fontFamily === 'string') {
-        s.fontFamily = m.attrs.fontFamily as string;
+      else if (m.type === 'textStyle') {
+        if (typeof m.attrs?.fontFamily === 'string') s.fontFamily = m.attrs.fontFamily as string;
+        const c = cssColor(m.attrs?.color);
+        if (c) s.color = c;
       }
     }
     spans.push(s);

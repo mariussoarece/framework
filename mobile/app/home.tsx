@@ -15,7 +15,8 @@ import { iconFor, themeFor } from '../src/theme/themes';
 
 export default function Home() {
   const { t } = useI18n();
-  const { ready, org, home, buttons, refresh } = useSession();
+  const { ready, org, home, buttons, profile, refresh } = useSession();
+  const isOwner = profile?.role === 'owner';
   const [refreshing, setRefreshing] = React.useState(false);
   const theme = themeFor(home?.theme_key);
 
@@ -43,6 +44,13 @@ export default function Home() {
             <Text style={[styles.orgName, { color: theme.text }]} accessibilityRole="header" numberOfLines={2}>
               {org.name}
             </Text>
+            {isOwner ? (
+              <Pressable onPress={() => router.push('/edit-home')} accessibilityRole="button"
+                accessibilityLabel={t('home.edit')} hitSlop={12}
+                style={[styles.gear, { backgroundColor: theme.surface }]}>
+                <Ionicons name="create-outline" size={22} color={theme.text} />
+              </Pressable>
+            ) : null}
             <Pressable onPress={() => router.push('/settings')} accessibilityRole="button"
               accessibilityLabel={t('home.settings')} hitSlop={12}
               style={[styles.gear, { backgroundColor: theme.surface }]}>

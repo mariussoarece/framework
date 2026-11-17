@@ -12,6 +12,11 @@ function Routes() {
       <Stack.Screen name="settings" options={{ headerShown: true, title: t('settings.title'), headerBackTitle: t('common.back') }} />
       <Stack.Screen name="schedule" options={{ headerShown: true, title: '', headerBackTitle: t('common.back') }} />
       <Stack.Screen name="workouts" options={{ headerShown: true, title: '', headerBackTitle: t('common.back') }} />
+      <Stack.Screen name="section/[id]" options={{ headerShown: true, title: '', headerBackTitle: t('common.back') }} />
+      <Stack.Screen name="workout/[id]" options={{ headerShown: true, title: '', headerBackTitle: t('common.back') }} />
+      <Stack.Screen name="section-edit" options={{ headerShown: true, title: t('sections.edit'), presentation: 'modal' }} />
+      <Stack.Screen name="workout-edit" options={{ headerShown: true, title: t('workouts.add'), presentation: 'modal' }} />
+      <Stack.Screen name="edit-home" options={{ headerShown: true, title: t('edit.title'), presentation: 'modal' }} />
     </Stack>
   );
 }
