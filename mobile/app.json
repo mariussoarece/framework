@@ -30,7 +30,9 @@
           "photosPermission": "Allow access to your photos to add pictures and videos to your workouts and home page."
         }
       ],
-      "expo-video"
+      "expo-video",
+      "expo-status-bar",
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": false
