@@ -136,25 +136,32 @@ const styles = StyleSheet.create({
 export function Tabs<K extends string>({ tabs, value, onChange, theme = DEFAULT_THEME }: {
   tabs: { key: K; label: string; badge?: number }[]; value: K; onChange: (k: K) => void; theme?: Theme;
 }) {
-  return (
-    <View style={[tabStyles.row, { borderColor: theme.border, backgroundColor: theme.surface }]} accessibilityRole="tablist">
-      {tabs.map((tab) => {
-        const on = tab.key === value;
-        return (
-          <Pressable key={tab.key} onPress={() => onChange(tab.key)} accessibilityRole="tab" accessibilityState={{ selected: on }}
-            style={[tabStyles.tab, on ? { backgroundColor: theme.primary } : null]}>
-            <Text numberOfLines={1} style={[tabStyles.text, { color: on ? theme.onPrimary : theme.text }]}>
-              {tab.label}{tab.badge ? ` (${tab.badge})` : ''}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
+  const many = tabs.length > 3;   // more than 3: scroll sideways instead of squeezing
+  const items = tabs.map((tab) => {
+    const on = tab.key === value;
+    return (
+      <Pressable key={tab.key} onPress={() => onChange(tab.key)} accessibilityRole="tab" accessibilityState={{ selected: on }}
+        style={[tabStyles.tab, many ? tabStyles.tabAuto : null, on ? { backgroundColor: theme.primary } : null]}>
+        <Text numberOfLines={1} style={[tabStyles.text, { color: on ? theme.onPrimary : theme.text }]}>
+          {tab.label}{tab.badge ? ` (${tab.badge})` : ''}
+        </Text>
+      </Pressable>
+    );
+  });
+  const box = [tabStyles.row, { borderColor: theme.border, backgroundColor: theme.surface }];
+  return many
+    ? (
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={box} contentContainerStyle={{ gap: 3 }}
+        accessibilityRole="tablist">
+        {items}
+      </ScrollView>
+    )
+    : <View style={box} accessibilityRole="tablist">{items}</View>;
 }
 
 const tabStyles = StyleSheet.create({
-  row: { flexDirection: 'row', borderWidth: 1, borderRadius: 12, padding: 3, gap: 3 },
+  row: { flexDirection: 'row', borderWidth: 1, borderRadius: 12, padding: 3, gap: 3, flexGrow: 0 },
   tab: { flex: 1, borderRadius: 9, paddingVertical: 10, paddingHorizontal: 4, alignItems: 'center' },
+  tabAuto: { flex: 0, paddingHorizontal: 14 },
   text: { fontSize: 14, fontWeight: '700' },
 });

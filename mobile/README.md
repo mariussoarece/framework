@@ -41,7 +41,7 @@ npm test                      # translations and rich-text tests
 | Workout | `app/workout/[id].tsx` | Pictures/videos on top, sets × reps or time, rest, warning, what to avoid, description |
 | Add / edit workout | `app/workout-edit.tsx` | Name, sets, repetitions **or** time, rest, rich-text description, pictures/videos with upload progress, warning, avoid, sections |
 | Admin | `app/admin.tsx` | Super admin: preview uploads, approve or reject (with a reason for the owner) |
-| Scheduling | `app/schedule.tsx`, `src/screens/` | Client: free times by day, request a session, my bookings (cancel). Owner: requests (accept/decline), upcoming sessions, weekly timetable (hours, session length, clients per session, price), days off |
+| Scheduling | `app/schedule.tsx`, `src/screens/` | Client: Book (classes one per line with instructor and places; open hours as time buttons), Week, My bookings. Owner: Requests, Upcoming, Week, Timetable (open hours or classes, several days at once, every week or N weeks; clashes refused), Time off (whole days, blocked sessions) |
 
 Rich text in Expo Go: bold, italic, underline, strike, lists, links, headings, colors.
 Text alignment and font choice need TenTap's advanced setup and a development build; they come with the payments step.

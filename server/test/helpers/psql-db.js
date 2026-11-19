@@ -5,7 +5,9 @@
 import { execFile } from 'node:child_process';
 import { DbError } from '../../src/db.js';
 
-const lit = (v) => (v === null || v === undefined ? 'null' : `'${String(v).replace(/'/g, "''")}'`);
+const lit = (v) => (v === null || v === undefined ? 'null'
+  : Array.isArray(v) ? `'{${v.join(',')}}'`
+    : `'${String(v).replace(/'/g, "''")}'`);
 const ident = (s) => {
   if (!/^[a-z_][a-z0-9_]*$/.test(s)) throw new Error(`bad identifier ${s}`);
   return s;

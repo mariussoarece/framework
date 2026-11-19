@@ -160,3 +160,22 @@ test('scheduling: days in the organization time zone', () => {
   assert.deepEqual(g.map((d) => [d.day, d.items.length]), [['2026-11-20', 2], ['2026-11-21', 1]]);
   assert.match(sch.formatMoney(3000, 'EUR', 'ro'), /30/);
 });
+
+test('scheduling: weeks and dates', () => {
+  assert.equal(sch.addDays('2026-12-30', 3), '2027-01-02');
+  assert.equal(sch.weekStart('2026-11-19'), '2026-11-16', 'Thursday -> Monday');
+  assert.equal(sch.weekStart('2026-11-22'), '2026-11-16', 'Sunday belongs to the week that started Monday');
+  assert.equal(sch.untilForWeeks('2026-11-19', 3), '2026-12-09');
+  assert.equal(sch.weeksBetween('2026-11-19', '2026-12-09'), 3);
+  assert.equal(sch.addMinutes('18:00', 90), '19:30');
+  assert.equal(sch.addMinutes('23:30', 60), null, 'a class may not pass midnight');
+});
+
+test('clash message names the existing entry, in both languages', () => {
+  const err = { message: 'schedule_clash|3|18:00|19:00|Low kick' };
+  assert.equal(errorText('en', err), 'This overlaps with Wednesday 18:00–19:00 (Low kick). Change the time or the days.');
+  assert.equal(errorText('ro', err), 'Se suprapune cu miercuri 18:00–19:00 (Low kick). Schimbă ora sau zilele.');
+  assert.equal(errorText('en', { message: 'schedule_clash|1|09:00|17:00|' }),
+    'This overlaps with Monday 09:00–17:00. Change the time or the days.');
+  assert.equal(errorText('en', { message: 'rule_has_bookings' }), en['error.rule_has_bookings']);
+});

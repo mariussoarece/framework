@@ -4,6 +4,7 @@ import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } 
 import { useFocusEffect } from 'expo-router';
 import { Message, Muted, Tabs } from '../components/ui';
 import { BookingCard } from './BookingCard';
+import { WeekView } from './WeekView';
 import { useI18n } from '../i18n/I18nProvider';
 import { cancelBooking, freeSlots, listBookings, requestBooking, type Booking, type FreeSlot } from '../lib/data';
 import { clock, dayKey, dayLabel, formatMoney, groupByDay, today } from '../lib/schedule';
@@ -14,7 +15,7 @@ export function ClientSchedule({ theme }: { theme: Theme }) {
   const { t, tError, language } = useI18n();
   const { org, profile } = useSession();
   const tz = org?.timezone ?? 'Europe/Bucharest';
-  const [tab, setTab] = useState<'book' | 'mine'>('book');
+  const [tab, setTab] = useState<'book' | 'week' | 'mine'>('book');
   const [slots, setSlots] = useState<FreeSlot[] | null>(null);
   const [upcoming, setUpcoming] = useState<Booking[]>([]);
   const [past, setPast] = useState<Booking[]>([]);
@@ -41,7 +42,7 @@ export function ClientSchedule({ theme }: { theme: Theme }) {
 
   function ask(slot: FreeSlot) {
     const day = dayLabel(dayKey(slot.starts_at, tz), language);
-    const time = clock(slot.starts_at, tz, language);
+    const time = clock(slot.starts_at, tz, language) + (slot.title ? ` · ${slot.title}` : '');
     Alert.alert(t('schedule.confirmTitle'), t('schedule.confirmText', { day, time, org: org?.name ?? '' }), [
       { text: t('common.cancel'), style: 'cancel' },
       { text: t('schedule.request'), onPress: () => book(slot) },
@@ -88,38 +89,72 @@ export function ClientSchedule({ theme }: { theme: Theme }) {
     >
       <Tabs theme={theme} value={tab} onChange={setTab} tabs={[
         { key: 'book', label: t('schedule.book') },
+        { key: 'week', label: t('schedule.week') },
         { key: 'mine', label: t('schedule.myBookings'), badge: active.length },
       ]} />
       <Message text={error} />
       <Message kind="info" text={info} />
 
+      {tab === 'week' ? <WeekView theme={theme} tz={tz} /> : null}
+
       {tab === 'book' ? (
         <>
           {org?.status === 'paused' ? <Message text={t('error.organization_unavailable')} /> : null}
-          {slots && !slots.length ? <Muted theme={theme}>{t('schedule.noSlots')}</Muted> : null}
-          {days.map((d) => (
-            <View key={d.day} style={[styles.day, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-              <Text style={[styles.dayTitle, { color: theme.text }]}>{dayLabel(d.day, language)}</Text>
-              <View style={styles.slots}>
-                {d.items.map((s) => (
-                  <Pressable key={s.starts_at} onPress={() => ask(s)} disabled={busy !== null}
-                    accessibilityRole="button"
-                    style={({ pressed }) => [styles.slot, { borderColor: theme.primary, opacity: pressed || busy === s.starts_at ? 0.6 : 1 }]}>
-                    <Text style={[styles.slotTime, { color: theme.primary }]}>{clock(s.starts_at, tz, language)}</Text>
-                    {s.price_cents > 0
-                      ? <Text style={[styles.slotSub, { color: theme.muted }]}>{formatMoney(s.price_cents, s.currency, language)}</Text>
-                      : null}
-                    {s.remaining > 1
-                      ? <Text style={[styles.slotSub, { color: theme.muted }]}>{t('schedule.places', { n: s.remaining })}</Text>
-                      : null}
-                  </Pressable>
-                ))}
+          {slots && !slots.some((x) => x.remaining > 0) ? <Muted theme={theme}>{t('schedule.noSlots')}</Muted> : null}
+          {days.map((d) => {
+            const classes = d.items.filter((x) => x.kind === 'class');
+            const open = d.items.filter((x) => x.kind !== 'class' && x.remaining > 0);
+            if (!classes.length && !open.length) return null;
+            return (
+              <View key={d.day} style={[styles.day, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                <Text style={[styles.dayTitle, { color: theme.text }]}>{dayLabel(d.day, language)}</Text>
+                {classes.map((c) => {
+                  const full = c.remaining <= 0;
+                  return (
+                    <Pressable key={c.starts_at} onPress={() => ask(c)} disabled={full || busy !== null}
+                      accessibilityRole="button" accessibilityState={{ disabled: full }}
+                      style={({ pressed }) => [styles.classRow, { borderColor: full ? theme.border : theme.primary, opacity: pressed || busy === c.starts_at ? 0.6 : 1 }]}>
+                      <Text style={[styles.classTime, { color: full ? theme.muted : theme.primary }]}>
+                        {clock(c.starts_at, tz, language)}–{clock(c.ends_at, tz, language)}
+                      </Text>
+                      <View style={{ flex: 1, gap: 2 }}>
+                        <Text style={[styles.className, { color: theme.text }]}>{c.title}</Text>
+                        <Text style={{ color: theme.muted, fontSize: 14 }}>
+                          {[c.instructor ? t('schedule.with', { name: c.instructor }) : '',
+                            t('schedule.taken', { booked: c.capacity - c.remaining, capacity: c.capacity }),
+                            c.price_cents > 0 ? formatMoney(c.price_cents, c.currency, language) : '']
+                            .filter(Boolean).join('  ·  ')}
+                        </Text>
+                      </View>
+                      {full ? <Text style={styles.full}>{t('schedule.full')}</Text> : null}
+                    </Pressable>
+                  );
+                })}
+                {open.length ? (
+                  <View style={styles.slots}>
+                    {open.map((s) => (
+                      <Pressable key={s.starts_at} onPress={() => ask(s)} disabled={busy !== null}
+                        accessibilityRole="button"
+                        style={({ pressed }) => [styles.slot, { borderColor: theme.primary, opacity: pressed || busy === s.starts_at ? 0.6 : 1 }]}>
+                        <Text style={[styles.slotTime, { color: theme.primary }]}>{clock(s.starts_at, tz, language)}</Text>
+                        {s.price_cents > 0
+                          ? <Text style={[styles.slotSub, { color: theme.muted }]}>{formatMoney(s.price_cents, s.currency, language)}</Text>
+                          : null}
+                        {s.capacity > 1
+                          ? <Text style={[styles.slotSub, { color: theme.muted }]}>{t('schedule.places', { n: s.remaining })}</Text>
+                          : null}
+                      </Pressable>
+                    ))}
+                  </View>
+                ) : null}
               </View>
-            </View>
-          ))}
+            );
+          })}
           <Muted theme={theme}>{t('schedule.timezone', { tz })}</Muted>
         </>
-      ) : (
+      ) : null}
+
+      {tab === 'mine' ? (
         <>
           {!upcoming.length ? <Muted theme={theme}>{t('schedule.noBookings')}</Muted> : null}
           {upcoming.map((b) => (
@@ -129,7 +164,7 @@ export function ClientSchedule({ theme }: { theme: Theme }) {
           {past.length ? <Text style={[styles.dayTitle, { color: theme.text, marginTop: 8 }]}>{t('schedule.past')}</Text> : null}
           {past.map((b) => <BookingCard key={b.id} booking={b} tz={tz} theme={theme} />)}
         </>
-      )}
+      ) : null}
     </ScrollView>
   );
 }
@@ -142,4 +177,8 @@ const styles = StyleSheet.create({
   slot: { borderWidth: 1.5, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14, alignItems: 'center', minWidth: 84 },
   slotTime: { fontSize: 17, fontWeight: '700' },
   slotSub: { fontSize: 12 },
+  classRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1.5, borderRadius: 12, padding: 12 },
+  classTime: { fontSize: 15, fontWeight: '700', width: 98 },
+  className: { fontSize: 16, fontWeight: '700' },
+  full: { fontSize: 12, fontWeight: '700', color: '#8C1D18', backgroundColor: '#FDECEA', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, overflow: 'hidden' },
 });

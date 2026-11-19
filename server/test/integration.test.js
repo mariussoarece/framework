@@ -135,11 +135,11 @@ test('server end to end', { skip: !DB && 'set TEST_DB_URL to run' }, async () =>
     assert.ok(urls.data.video_1080.url.includes('_1080.mp4'));
 
     // ------------------------------------------------------------ paid booking: authorize, accept, cancel
-    for (let d = 0; d < 7; d += 1) {
-      await db.as(T.owner).insert('availability', {
-        organization_id: org.id, weekday: d, start_time: '08:00', end_time: '20:00', slot_minutes: 60, price_cents: 3000,
-      });
-    }
+    await db.as(T.owner).rpc('save_availability', {
+      p_id: null, p_weekdays: [0, 1, 2, 3, 4, 5, 6], p_kind: 'open', p_title: null, p_instructor: null,
+      p_start: '08:00', p_end: '20:00', p_slot_minutes: 60, p_capacity: 1, p_price_cents: 3000,
+      p_valid_from: new Date().toISOString().slice(0, 10), p_valid_until: null,
+    });
     const slots = await db.as(T.client).rpc('available_slots', { p_from: new Date().toISOString().slice(0, 10), p_days: 3 });
     const b1 = await db.as(T.client).rpc('request_booking', { p_starts_at: slots[0].starts_at });
     assert.equal(b1.payment_status, 'requires_payment');

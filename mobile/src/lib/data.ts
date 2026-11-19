@@ -167,16 +167,38 @@ export async function reviewMedia(id: string, approve: boolean, reason?: string)
 }
 
 // ---------------------------------------------------------------- scheduling
+export type ScheduleKind = 'open' | 'class';
+
 export type Availability = {
   id: string;
   organization_id: string;
   weekday: number;
-  start_time: string;       // "09:00:00"
+  kind: ScheduleKind;
+  title: string | null;       // class name
+  instructor: string | null;
+  start_time: string;         // "09:00:00"
   end_time: string;
-  slot_minutes: number;
+  slot_minutes: number;       // session length; for a class: its length
   capacity: number;
   price_cents: number;
   currency: string;
+  valid_from: string;         // YYYY-MM-DD
+  valid_until: string | null; // null = every week, no end
+};
+
+export type AvailabilityInput = {
+  id?: string;
+  weekdays: number[];
+  kind: ScheduleKind;
+  title: string | null;
+  instructor: string | null;
+  start: string;              // "HH:MM"
+  end: string | null;         // open hours only
+  slot_minutes: number;
+  capacity: number;
+  price_cents: number;
+  valid_from: string;
+  valid_until: string | null;
 };
 
 export type DayOff = { id: string; organization_id: string; day: string; closed: boolean };
@@ -192,6 +214,8 @@ export type Booking = {
   price_cents: number;
   currency: string;
   cancelled_by: 'client' | 'owner' | 'system' | null;
+  title: string | null;
+  instructor: string | null;
   profiles?: { display_name: string | null; email: string | null } | null;
 };
 
@@ -199,19 +223,24 @@ export async function listAvailability(): Promise<Availability[]> {
   return check(await supabase.from('availability').select('*').order('weekday').order('start_time'));
 }
 
-export async function saveAvailability(orgId: string, a: Omit<Availability, 'id' | 'organization_id'> & { id?: string }): Promise<void> {
-  const { id, ...row } = a;
-  if (id) check(await supabase.from('availability').update(row).eq('id', id));
-  else check(await supabase.from('availability').insert({ ...row, organization_id: orgId }));
+// Creates the entry on every chosen weekday (all or nothing), or updates one entry.
+// The database refuses clashes ("schedule_clash|..."), see errorText().
+export async function saveAvailability(a: AvailabilityInput): Promise<void> {
+  check(await supabase.rpc('save_availability', {
+    p_id: a.id ?? null, p_weekdays: a.weekdays, p_kind: a.kind, p_title: a.title, p_instructor: a.instructor,
+    p_start: a.start, p_end: a.end, p_slot_minutes: a.slot_minutes, p_capacity: a.capacity,
+    p_price_cents: a.price_cents, p_valid_from: a.valid_from, p_valid_until: a.valid_until,
+  }));
 }
 
 export async function deleteAvailability(id: string): Promise<void> {
-  check(await supabase.from('availability').delete().eq('id', id));
+  check(await supabase.rpc('delete_availability', { p_id: id }));
 }
 
+// Whole days off (blocked sessions have times and are handled by daySlots/blockSlot).
 export async function listDaysOff(fromDay: string): Promise<DayOff[]> {
   return check(await supabase.from('availability_exceptions').select('id, organization_id, day, closed')
-    .eq('closed', true).gte('day', fromDay).order('day'));
+    .eq('closed', true).is('start_time', null).gte('day', fromDay).order('day'));
 }
 
 export async function addDayOff(orgId: string, day: string): Promise<void> {
@@ -222,10 +251,52 @@ export async function deleteDayOff(id: string): Promise<void> {
   check(await supabase.from('availability_exceptions').delete().eq('id', id));
 }
 
-export type FreeSlot = { starts_at: string; ends_at: string; remaining: number; price_cents: number; currency: string };
+export type FreeSlot = {
+  starts_at: string;
+  ends_at: string;
+  remaining: number;          // 0 = full
+  capacity: number;
+  price_cents: number;
+  currency: string;
+  availability_id: string | null;
+  kind: ScheduleKind;
+  title: string | null;
+  instructor: string | null;
+};
 
 export async function freeSlots(fromDay: string, days = 14): Promise<FreeSlot[]> {
   return check(await supabase.rpc('available_slots', { p_from: fromDay, p_days: days })) as FreeSlot[];
+}
+
+export type WeekEntry = {
+  day: string;
+  availability_id: string;
+  kind: ScheduleKind;
+  title: string | null;
+  instructor: string | null;
+  start_time: string;
+  end_time: string;
+  slot_minutes: number;
+  capacity: number;
+  booked: number;
+  day_off: boolean;
+};
+
+export async function weekOverview(fromDay: string, days = 7): Promise<WeekEntry[]> {
+  return check(await supabase.rpc('week_overview', { p_from: fromDay, p_days: days })) as WeekEntry[];
+}
+
+export type DaySlot = {
+  starts_at: string; ends_at: string; booked: number; capacity: number;
+  kind: ScheduleKind; title: string | null; blocked: boolean;
+};
+
+export async function daySlots(day: string): Promise<DaySlot[]> {
+  return check(await supabase.rpc('day_slots', { p_day: day })) as DaySlot[];
+}
+
+export async function blockSlot(startsAt: string, block: boolean): Promise<void> {
+  check(await supabase.rpc('block_slot', { p_starts_at: startsAt, p_block: block }));
 }
 
 export async function requestBooking(startsAt: string): Promise<Booking> {

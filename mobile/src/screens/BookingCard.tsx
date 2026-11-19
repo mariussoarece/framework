@@ -34,6 +34,11 @@ export function BookingCard({ booking: b, tz, theme, showClient, onAccept, onDec
             {clock(b.starts_at, tz, language)}–{clock(b.ends_at, tz, language)}
             {b.price_cents > 0 ? `  ·  ${formatMoney(b.price_cents, b.currency, language)}` : ''}
           </Text>
+          {b.title ? (
+            <Text style={{ color: theme.text, fontSize: 15, fontWeight: '600' }}>
+              {b.title}{b.instructor ? ` · ${t('schedule.with', { name: b.instructor })}` : ''}
+            </Text>
+          ) : null}
           {showClient ? <Text style={{ color: theme.muted, fontSize: 15 }}>{client}</Text> : null}
         </View>
         <Text style={[styles.badge, { backgroundColor: colors.bg, color: colors.fg }]}>

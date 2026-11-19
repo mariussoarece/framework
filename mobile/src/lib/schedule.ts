@@ -79,3 +79,32 @@ export function groupByDay<T extends { starts_at: string }>(items: T[], timeZone
 
 // Today in the organization's time zone, YYYY-MM-DD.
 export const today = (timeZone: string) => dayKey(new Date().toISOString(), timeZone);
+
+// YYYY-MM-DD + n days
+export function addDays(key: string, n: number): string {
+  const d = new Date(`${key}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+// Monday of the week containing the given day.
+export function weekStart(key: string): string {
+  const dow = new Date(`${key}T12:00:00Z`).getUTCDay();
+  return addDays(key, -((dow + 6) % 7));
+}
+
+// Last day for "repeat for N weeks" starting on `from` (N >= 1).
+export const untilForWeeks = (from: string, weeks: number) => addDays(from, weeks * 7 - 1);
+
+// Number of weeks an entry covers (rounded up), for showing it again in the form.
+export function weeksBetween(from: string, until: string): number {
+  const days = Math.round((Date.parse(`${until}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86400000) + 1;
+  return Math.max(1, Math.ceil(days / 7));
+}
+
+// "HH:MM" + minutes -> "HH:MM" (same day only; null if it passes midnight)
+export function addMinutes(hhmm: string, minutes: number): string | null {
+  const total = minutesOf(hhmm) + minutes;
+  if (total >= 24 * 60) return null;
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}

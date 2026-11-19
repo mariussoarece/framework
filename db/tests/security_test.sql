@@ -77,8 +77,11 @@ select test.fails($$update public.home_buttons set type = 'workouts' where type 
 update public.home_buttons set label = 'Book a session', color = '#AA3355' where type = 'scheduling';
 select test.ok((select label from public.home_buttons where type = 'scheduling') = 'Book a session',
                'owner renames a button');
-insert into public.availability (organization_id, weekday, start_time, end_time, slot_minutes, capacity, price_cents)
-  select app.my_org(), d, '09:00', '12:00', 60, 1, 3000 from generate_series(0, 6) d;
+select count(*) from public.save_availability(null, array[0,1,2,3,4,5,6], 'open', null, null,
+  '09:00', '12:00', 60, 1, 3000, current_date, null);
+select test.fails($$insert into public.availability (organization_id, weekday, start_time, end_time)
+                    select app.my_org(), 1, '13:00', '14:00'$$, 'permission denied',
+                  'timetable changes only through save_availability (with checks)');
 
 -- ---------------------------------------------------------------- owner B cannot touch A
 reset role; select test.claims(:u2, 'owner.b@example.com'); set role authenticated;
@@ -194,6 +197,67 @@ select test.ok((select count(*) from public.profiles) = 3, 'owner sees own profi
 reset role; select test.claims(:u2, 'owner.b@example.com'); set role authenticated;
 select test.ok((select count(*) from public.bookings) = 0, 'owner B sees none of A''s bookings');
 
+-- ---------------------------------------------------------------- classes, weeks, blocked times, clashes
+reset role; select test.claims(:u2, 'owner.b@example.com'); set role authenticated;
+-- class on Mon+Wed+Fri 18:00, 60 min, 2 places, for 3 weeks
+select test.ok((select count(*) from public.save_availability(null, array[1,3,5], 'class', 'Low kick', 'Sensei Ana',
+  '18:00', null, 60, 2, 0, current_date, current_date + 20)) = 3, 'one class created on three weekdays at once');
+select test.ok((select end_time from public.availability where title = 'Low kick' limit 1) = '19:00',
+  'class end time follows its length');
+select test.fails($$select public.save_availability(null, array[3], 'open', null, null, '18:30', '20:00', 30, 1, 0, current_date, null)$$,
+  'schedule_clash|3|18:00|19:00|Low kick', 'overlapping entry on the same weekday is refused, naming the clash');
+select test.fails($$select public.save_availability(null, array[2,3], 'open', null, null, '18:30', '20:00', 30, 1, 0, current_date, null)$$,
+  'schedule_clash', 'multi-day create is all-or-nothing when one day clashes');
+select test.ok((select count(*) from public.availability where weekday = 2) = 0, 'nothing saved for the other day');
+select test.ok((select count(*) from public.save_availability(null, array[3], 'open', null, null, '18:30', '20:00', 30, 1, 0,
+  current_date + 21, null)) = 1, 'same time is fine after the class period ends');
+select test.ok((select count(*) from public.save_availability(null, array[3], 'open', null, null, '07:00', '09:00', 30, 1, 0,
+  current_date, null)) = 1, 'open hours next to the class are fine');
+select test.ok((select count(*) from public.week_overview(current_date, 28) where title = 'Low kick')
+  between 8 and 10, 'class repeats only for its three weeks');
+select test.ok((select count(distinct kind) from public.week_overview(current_date, 7)) = 2, 'week view lists classes and open hours');
+
+reset role; select test.claims(:u4, 'client.b@example.com'); set role authenticated;
+select set_config('test.kick', (select starts_at::text from public.available_slots(current_date, 14)
+  where title = 'Low kick' order by starts_at limit 1), false);
+select test.ok((select remaining || '/' || capacity || ' ' || instructor from public.available_slots(current_date, 14)
+  where starts_at = current_setting('test.kick')::timestamptz) = '2/2 Sensei Ana', 'client sees the class with places and instructor');
+select test.ok((select title from public.request_booking(current_setting('test.kick')::timestamptz)) = 'Low kick',
+  'booking keeps the class name');
+select test.ok((select remaining from public.available_slots(current_date, 14)
+  where starts_at = current_setting('test.kick')::timestamptz) = 1, 'places go down after a booking');
+
+reset role; select test.claims(:u2, 'owner.b@example.com'); set role authenticated;
+select test.fails($$select public.save_availability((select id from public.availability where title = 'Low kick'
+  and weekday = extract(dow from (current_setting('test.kick')::timestamptz at time zone 'Europe/Bucharest'))),
+  array[extract(dow from (current_setting('test.kick')::timestamptz at time zone 'Europe/Bucharest'))::int],
+  'class', 'Low kick', 'Sensei Ana', '17:00', null, 60, 2, 0, current_date, current_date + 20)$$,
+  'rule_has_bookings', 'moving a class with bookings is refused');
+select test.fails($$select public.delete_availability((select availability_id from public.bookings
+  where title = 'Low kick' limit 1))$$, 'rule_has_bookings', 'deleting a class with bookings is refused');
+select test.fails($$select public.block_slot(current_setting('test.kick')::timestamptz, true)$$,
+  'slot_has_bookings', 'a booked session cannot be blocked');
+select set_config('test.wed', (current_date + ((3 - extract(dow from current_date)::int + 7) % 7) + 7)::text, false);
+select set_config('test.open', (select starts_at::text from public.day_slots(current_setting('test.wed')::date)
+  where kind = 'open' order by starts_at limit 1), false);
+select test.ok((select count(*) from public.day_slots(current_setting('test.wed')::date) where kind = 'open') >= 4,
+  'owner sees the sessions of a day');
+select public.block_slot(current_setting('test.open')::timestamptz, true);
+select test.ok((select blocked from public.day_slots(current_setting('test.wed')::date) where starts_at = current_setting('test.open')::timestamptz),
+  'session blocked');
+reset role; select test.claims(:u4, 'client.b@example.com'); set role authenticated;
+select test.ok(not exists (select 1 from public.available_slots(current_date, 14)
+  where starts_at = current_setting('test.open')::timestamptz), 'clients cannot book a blocked session');
+reset role; select test.claims(:u2, 'owner.b@example.com'); set role authenticated;
+select public.block_slot(current_setting('test.open')::timestamptz, false);
+select test.ok(not (select blocked from public.day_slots(current_setting('test.wed')::date) where starts_at = current_setting('test.open')::timestamptz),
+  'session unblocked');
+reset role; select test.claims(:u4, 'client.b@example.com'); set role authenticated;
+select test.fails($$select public.block_slot(current_setting('test.open')::timestamptz, true)$$, 'forbidden',
+  'clients cannot block sessions');
+select test.fails($$select public.save_availability(null, array[1], 'open', null, null, '06:00', '07:00', 60, 1, 0, current_date, null)$$,
+  'forbidden', 'clients cannot change the timetable');
+
 -- ---------------------------------------------------------------- expiry
 reset role;
 insert into public.bookings (organization_id, client_id, starts_at, ends_at, price_cents, payment_status, created_at)
@@ -203,7 +267,7 @@ from public.profiles where id = :u4;
 set role service_role;
 select test.ok(public.expire_bookings() = 1, 'unpaid booking expires after 30 minutes');
 reset role;
-select test.ok((select status || '/' || cancelled_by from public.bookings where client_id = :u4) = 'cancelled/system',
+select test.ok((select status || '/' || cancelled_by from public.bookings where client_id = :u4 and price_cents = 2000) = 'cancelled/system',
                'expired booking is cancelled by the system');
 
 -- ---------------------------------------------------------------- closing an organization
@@ -214,7 +278,7 @@ select test.ok((select organization_id from public.profiles where id = :u3) is n
                'clients of a closed organization are released');
 select test.ok((select count(*) from public.workouts where organization_id = current_setting('test.org_a')::uuid) = 0,
                'closed organization''s workouts are deleted');
-select test.ok((select status from public.bookings limit 1) = 'cancelled', 'future bookings are cancelled');
+select test.ok((select status from public.bookings where organization_id = current_setting('test.org_a')::uuid limit 1) = 'cancelled', 'future bookings are cancelled');
 select test.fails($$select * from app.close_organization((select id from public.organizations where is_default))$$,
                   'cannot_close_default', 'YogaByTheSofa cannot be closed');
 
