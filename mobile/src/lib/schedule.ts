@@ -108,3 +108,12 @@ export function addMinutes(hhmm: string, minutes: number): string | null {
   if (total >= 24 * 60) return null;
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }
+
+// The part of a week (Monday `week`) that is not in the past: from today or Monday, to Sunday.
+export function bookableRange(week: string, todayKey: string): { from: string; days: number } {
+  const end = addDays(week, 6);
+  const from = todayKey > week ? todayKey : week;
+  if (from > end) return { from: end, days: 0 };
+  const days = Math.round((Date.parse(`${end}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86400000) + 1;
+  return { from, days };
+}

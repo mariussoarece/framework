@@ -4,11 +4,12 @@ import { KeyboardScroll } from '../components/KeyboardScroll';
 import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Message, Muted, Tabs } from '../components/ui';
+import { Ionicons } from '@expo/vector-icons';
 import { BookingCard } from './BookingCard';
 import { WeekView } from './WeekView';
 import { useI18n } from '../i18n/I18nProvider';
 import { cancelBooking, freeSlots, listBookings, requestBooking, type Booking, type FreeSlot } from '../lib/data';
-import { clock, dayKey, dayLabel, formatMoney, groupByDay, today } from '../lib/schedule';
+import { addDays, bookableRange, clock, dayKey, dayLabel, formatMoney, groupByDay, today, weekStart } from '../lib/schedule';
 import { useSession } from '../lib/session';
 import type { Theme } from '../theme/themes';
 
@@ -17,6 +18,9 @@ export function ClientSchedule({ theme }: { theme: Theme }) {
   const { org, profile } = useSession();
   const tz = org?.timezone ?? 'Europe/Bucharest';
   const [tab, setTab] = useState<'book' | 'week' | 'mine'>('book');
+  const thisWeek = weekStart(today(tz));
+  const [week, setWeek] = useState(thisWeek);     // Monday of the week shown in "Book"
+  const MAX_WEEKS_AHEAD = 12;
   const [slots, setSlots] = useState<FreeSlot[] | null>(null);
   const [upcoming, setUpcoming] = useState<Booking[]>([]);
   const [past, setPast] = useState<Booking[]>([]);
@@ -26,18 +30,18 @@ export function ClientSchedule({ theme }: { theme: Theme }) {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
+    const range = bookableRange(week, today(tz));   // this week: from today to Sunday
     try {
       const [s, u, p] = await Promise.all([
-        freeSlots(today(tz), 14),
+        freeSlots(range.from, range.days),
         listBookings({ owner: false, upcomingOnly: true, clientId: profile?.id }),
         listBookings({ owner: false, upcomingOnly: false, clientId: profile?.id }),
       ]);
       setSlots(s); setUpcoming(u); setPast(p);
-      setError(null);
     } catch (err) {
       setError(tError(err));
     }
-  }, [tz, profile?.id, tError]);
+  }, [tz, week, profile?.id, tError]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -58,7 +62,7 @@ export function ClientSchedule({ theme }: { theme: Theme }) {
       await load();
       setTab('mine');
     } catch (err) {
-      setError(tError(err));
+      Alert.alert(t('schedule.notPossible'), tError(err));
       await load();
     } finally {
       setBusy(null);
@@ -68,10 +72,17 @@ export function ClientSchedule({ theme }: { theme: Theme }) {
   function cancel(b: Booking) {
     const day = dayLabel(dayKey(b.starts_at, tz), language);
     Alert.alert(t('schedule.cancel'), t('schedule.cancelConfirm', { day, time: clock(b.starts_at, tz, language) }), [
-      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('schedule.keep'), style: 'cancel' },
       {
-        text: t('schedule.cancel'), style: 'destructive', onPress: async () => {
-          try { await cancelBooking(b.id); await load(); } catch (err) { setError(tError(err)); }
+        text: t('schedule.yesCancel'), style: 'destructive', onPress: async () => {
+          setInfo(null);
+          try {
+            await cancelBooking(b.id);
+            setInfo(t('schedule.cancelled'));
+          } catch (err) {
+            Alert.alert(t('schedule.notPossible'), tError(err));
+          }
+          await load();
         },
       },
     ]);
@@ -101,7 +112,20 @@ export function ClientSchedule({ theme }: { theme: Theme }) {
       {tab === 'book' ? (
         <>
           {org?.status === 'paused' ? <Message text={t('error.organization_unavailable')} /> : null}
-          {slots && !slots.some((x) => x.remaining > 0) ? <Muted theme={theme}>{t('schedule.noSlots')}</Muted> : null}
+          <View style={styles.nav}>
+            <Pressable onPress={() => setWeek(addDays(week, -7))} disabled={week <= thisWeek} hitSlop={10}
+              accessibilityRole="button" accessibilityLabel={t('schedule.prevWeek')}>
+              <Ionicons name="chevron-back" size={26} color={week <= thisWeek ? theme.border : theme.primary} />
+            </Pressable>
+            <Text style={[styles.range, { color: theme.text }]}>
+              {dayLabel(week, language)} – {dayLabel(addDays(week, 6), language)}
+            </Text>
+            <Pressable onPress={() => setWeek(addDays(week, 7))} disabled={week >= addDays(thisWeek, 7 * MAX_WEEKS_AHEAD)}
+              hitSlop={10} accessibilityRole="button" accessibilityLabel={t('schedule.nextWeek')}>
+              <Ionicons name="chevron-forward" size={26} color={theme.primary} />
+            </Pressable>
+          </View>
+          {slots && !slots.some((x) => x.remaining > 0) ? <Muted theme={theme}>{t('schedule.nothingThisWeek')}</Muted> : null}
           {days.map((d) => {
             const classes = d.items.filter((x) => x.kind === 'class');
             const open = d.items.filter((x) => x.kind !== 'class' && x.remaining > 0);
@@ -172,6 +196,8 @@ export function ClientSchedule({ theme }: { theme: Theme }) {
 
 const styles = StyleSheet.create({
   content: { padding: 20, gap: 14, paddingBottom: 40 },
+  nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  range: { flex: 1, textAlign: 'center', fontSize: 15, fontWeight: '700', textTransform: 'capitalize' },
   day: { borderRadius: 16, borderWidth: 1, padding: 14, gap: 10 },
   dayTitle: { fontSize: 17, fontWeight: '700', textTransform: 'capitalize' },
   slots: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },

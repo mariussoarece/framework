@@ -179,3 +179,9 @@ test('clash message names the existing entry, in both languages', () => {
     'This overlaps with Monday 09:00–17:00. Change the time or the days.');
   assert.equal(errorText('en', { message: 'rule_has_bookings' }), en['error.rule_has_bookings']);
 });
+
+test('book tab: one week at a time, never in the past', () => {
+  assert.deepEqual(sch.bookableRange('2026-11-16', '2026-11-19'), { from: '2026-11-19', days: 4 }, 'Thursday to Sunday');
+  assert.deepEqual(sch.bookableRange('2026-11-23', '2026-11-19'), { from: '2026-11-23', days: 7 }, 'next week: all 7 days');
+  assert.deepEqual(sch.bookableRange('2026-11-16', '2026-11-22'), { from: '2026-11-22', days: 1 }, 'Sunday: just today');
+});

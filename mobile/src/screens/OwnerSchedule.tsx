@@ -72,7 +72,6 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
       ]);
       setBookings(b); setEntries(h); setDaysOff(d);
       setReloadKey((k) => k + 1);
-      setError(null);
     } catch (err) {
       setError(tError(err));
     }
@@ -82,7 +81,8 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
 
   const run = async (fn: () => Promise<void>) => {
     setError(null);
-    try { await fn(); await load(); } catch (err) { setError(tError(err)); await load(); }
+    try { await fn(); } catch (err) { Alert.alert(t('schedule.notPossible'), tError(err)); }
+    await load();
   };
 
   const requests = bookings.filter((b) => b.status === 'pending');
@@ -232,8 +232,8 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
               onCancel={() => Alert.alert(t('schedule.cancel'), t('schedule.cancelConfirm', {
                 day: dayLabel(dayKey(b.starts_at, tz), language), time: clock(b.starts_at, tz, language),
               }), [
-                { text: t('common.cancel'), style: 'cancel' },
-                { text: t('schedule.cancel'), style: 'destructive', onPress: () => run(() => cancelBooking(b.id)) },
+                { text: t('schedule.keep'), style: 'cancel' },
+                { text: t('schedule.yesCancel'), style: 'destructive', onPress: () => run(() => cancelBooking(b.id)) },
               ])} />
           ))}
         </>
