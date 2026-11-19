@@ -1,6 +1,7 @@
 // Main -> Sections. Clients pick a section; the owner also adds, edits and reorders sections.
 import React, { useCallback, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardScroll } from '../src/components/KeyboardScroll';
+import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { MediaImage } from '../src/components/MediaImage';
@@ -47,7 +48,7 @@ export default function Workouts() {
   }
 
   return (
-    <ScrollView
+    <KeyboardScroll
       contentInsetAdjustmentBehavior="automatic"
       style={{ flex: 1, backgroundColor: theme.background }}
       contentContainerStyle={styles.content}
@@ -94,7 +95,7 @@ export default function Workouts() {
           ) : null}
         </View>
       ))}
-    </ScrollView>
+    </KeyboardScroll>
   );
 }
 

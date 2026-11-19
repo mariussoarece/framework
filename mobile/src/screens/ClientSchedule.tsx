@@ -1,6 +1,7 @@
 // Client: free times by day (tap to request), and my bookings with cancel.
 import React, { useCallback, useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardScroll } from '../components/KeyboardScroll';
+import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Message, Muted, Tabs } from '../components/ui';
 import { BookingCard } from './BookingCard';
@@ -80,7 +81,7 @@ export function ClientSchedule({ theme }: { theme: Theme }) {
   const active = upcoming.filter((b) => b.status === 'pending' || b.status === 'accepted');
 
   return (
-    <ScrollView
+    <KeyboardScroll
       contentInsetAdjustmentBehavior="automatic"
       style={{ flex: 1, backgroundColor: theme.background }}
       contentContainerStyle={styles.content}
@@ -165,7 +166,7 @@ export function ClientSchedule({ theme }: { theme: Theme }) {
           {past.map((b) => <BookingCard key={b.id} booking={b} tz={tz} theme={theme} />)}
         </>
       ) : null}
-    </ScrollView>
+    </KeyboardScroll>
   );
 }
 

@@ -1,7 +1,8 @@
 // Owner: booking requests, upcoming sessions, the week, the timetable (open hours and
 // classes, several days at once, every week or N weeks), and time off (whole days, blocked sessions).
 import React, { useCallback, useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardScroll } from '../components/KeyboardScroll';
+import { Alert, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Choice, Message, Muted, Tabs } from '../components/ui';
@@ -195,7 +196,7 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
     a.valid_until ? t('schedule.until', { date: dayLabel(a.valid_until, language) }) : t('schedule.everyWeek');
 
   return (
-    <ScrollView
+    <KeyboardScroll
       contentInsetAdjustmentBehavior="automatic"
       style={{ flex: 1, backgroundColor: theme.background }}
       contentContainerStyle={styles.content}
@@ -392,7 +393,7 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
           ) : null}
         </>
       ) : null}
-    </ScrollView>
+    </KeyboardScroll>
   );
 }
 

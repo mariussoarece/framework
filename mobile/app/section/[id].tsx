@@ -1,6 +1,7 @@
 // Main -> Section -> list of workouts. The owner sees the big "+ Add workout".
 import React, { useCallback, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardScroll } from '../../src/components/KeyboardScroll';
+import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Message, Muted } from '../../src/components/ui';
@@ -45,7 +46,7 @@ export default function SectionScreen() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   return (
-    <ScrollView
+    <KeyboardScroll
       contentInsetAdjustmentBehavior="automatic"
       style={{ flex: 1, backgroundColor: theme.background }}
       contentContainerStyle={styles.content}
@@ -83,7 +84,7 @@ export default function SectionScreen() {
           <Ionicons name="chevron-forward" size={22} color={theme.muted} />
         </Pressable>
       ))}
-    </ScrollView>
+    </KeyboardScroll>
   );
 }
 

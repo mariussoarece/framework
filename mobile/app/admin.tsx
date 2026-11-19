@@ -1,6 +1,7 @@
 // Super admin: approve or reject uploaded pictures and videos.
 import React, { useCallback, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardScroll } from '../src/components/KeyboardScroll';
+import { Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -49,7 +50,7 @@ export default function Admin() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-      <ScrollView contentContainerStyle={styles.content}
+      <KeyboardScroll contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing}
           onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}>
         <View style={styles.top}>
@@ -90,7 +91,7 @@ export default function Admin() {
           );
         })}
 
-      </ScrollView>
+      </KeyboardScroll>
     </SafeAreaView>
   );
 }
