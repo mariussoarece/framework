@@ -41,7 +41,7 @@ npm test                      # translations and rich-text tests
 | Workout | `app/workout/[id].tsx` | Pictures/videos on top, sets × reps or time, rest, warning, what to avoid, description |
 | Add / edit workout | `app/workout-edit.tsx` | Name, sets, repetitions **or** time, rest, rich-text description, pictures/videos with upload progress, warning, avoid, sections |
 | Admin | `app/admin.tsx` | Super admin: preview uploads, approve or reject (with a reason for the owner) |
-| Schedule | `app/schedule.tsx` | Placeholder for the next step |
+| Scheduling | `app/schedule.tsx`, `src/screens/` | Client: free times by day, request a session, my bookings (cancel). Owner: requests (accept/decline), upcoming sessions, weekly timetable (hours, session length, clients per session, price), days off |
 
 Rich text in Expo Go: bold, italic, underline, strike, lists, links, headings, colors.
 Text alignment and font choice need TenTap's advanced setup and a development build; they come with the payments step.
@@ -53,6 +53,7 @@ Text alignment and font choice need TenTap's advanced setup and a development bu
 | `src/lib/api.ts` | Calls to the Node server: signed media links (cached), delete account |
 | `src/lib/data.ts` | Sections, workouts, home page and approvals in the database |
 | `src/lib/upload.ts` | Streams a picked picture or video to the server, with progress |
+| `src/lib/schedule.ts` | Times, prices and days in the organization's time zone |
 | `src/lib/video.ts` | Picks 720p or 1080p from the client's setting and connection |
 | `src/components/media.tsx` | Photo/video picker, video player, gallery, approval status tiles |
 | `src/components/RichEditor.tsx` | The owner's rich-text editor (TipTap via TenTap) |

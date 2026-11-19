@@ -165,3 +165,88 @@ export async function listPendingMedia(): Promise<PendingMedia[]> {
 export async function reviewMedia(id: string, approve: boolean, reason?: string): Promise<void> {
   check(await supabase.rpc('review_media', { p_media: id, p_approve: approve, p_reason: reason || null }));
 }
+
+// ---------------------------------------------------------------- scheduling
+export type Availability = {
+  id: string;
+  organization_id: string;
+  weekday: number;
+  start_time: string;       // "09:00:00"
+  end_time: string;
+  slot_minutes: number;
+  capacity: number;
+  price_cents: number;
+  currency: string;
+};
+
+export type DayOff = { id: string; organization_id: string; day: string; closed: boolean };
+
+export type Booking = {
+  id: string;
+  organization_id: string;
+  client_id: string;
+  starts_at: string;
+  ends_at: string;
+  status: 'pending' | 'accepted' | 'declined' | 'cancelled';
+  payment_status: 'not_required' | 'requires_payment' | 'authorized' | 'captured' | 'canceled' | 'refunded';
+  price_cents: number;
+  currency: string;
+  cancelled_by: 'client' | 'owner' | 'system' | null;
+  profiles?: { display_name: string | null; email: string | null } | null;
+};
+
+export async function listAvailability(): Promise<Availability[]> {
+  return check(await supabase.from('availability').select('*').order('weekday').order('start_time'));
+}
+
+export async function saveAvailability(orgId: string, a: Omit<Availability, 'id' | 'organization_id'> & { id?: string }): Promise<void> {
+  const { id, ...row } = a;
+  if (id) check(await supabase.from('availability').update(row).eq('id', id));
+  else check(await supabase.from('availability').insert({ ...row, organization_id: orgId }));
+}
+
+export async function deleteAvailability(id: string): Promise<void> {
+  check(await supabase.from('availability').delete().eq('id', id));
+}
+
+export async function listDaysOff(fromDay: string): Promise<DayOff[]> {
+  return check(await supabase.from('availability_exceptions').select('id, organization_id, day, closed')
+    .eq('closed', true).gte('day', fromDay).order('day'));
+}
+
+export async function addDayOff(orgId: string, day: string): Promise<void> {
+  check(await supabase.from('availability_exceptions').insert({ organization_id: orgId, day, closed: true }));
+}
+
+export async function deleteDayOff(id: string): Promise<void> {
+  check(await supabase.from('availability_exceptions').delete().eq('id', id));
+}
+
+export type FreeSlot = { starts_at: string; ends_at: string; remaining: number; price_cents: number; currency: string };
+
+export async function freeSlots(fromDay: string, days = 14): Promise<FreeSlot[]> {
+  return check(await supabase.rpc('available_slots', { p_from: fromDay, p_days: days })) as FreeSlot[];
+}
+
+export async function requestBooking(startsAt: string): Promise<Booking> {
+  return check(await supabase.rpc('request_booking', { p_starts_at: startsAt })) as Booking;
+}
+
+export async function decideBooking(id: string, accept: boolean): Promise<void> {
+  check(await supabase.rpc('decide_booking', { p_booking: id, p_accept: accept }));
+}
+
+export async function cancelBooking(id: string): Promise<void> {
+  check(await supabase.rpc('cancel_booking', { p_booking: id }));
+}
+
+// Client: own bookings. Owner: all bookings of the organization, with the client's name.
+export async function listBookings(opts: { owner: boolean; upcomingOnly: boolean; clientId?: string }): Promise<Booking[]> {
+  let q = supabase.from('bookings')
+    .select(opts.owner ? '*, profiles(display_name, email)' : '*')
+    .order('starts_at', { ascending: opts.upcomingOnly });
+  if (!opts.owner && opts.clientId) q = q.eq('client_id', opts.clientId);
+  if (opts.upcomingOnly) q = q.gte('ends_at', new Date().toISOString());
+  else q = q.lt('ends_at', new Date().toISOString()).limit(50);
+  return check(await q) as unknown as Booking[];
+}

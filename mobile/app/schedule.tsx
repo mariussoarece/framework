@@ -1,17 +1,18 @@
-// Placeholder: built in a later step.
-import React from 'react';
-import { Muted, Screen } from '../src/components/ui';
-import { useI18n } from '../src/i18n/I18nProvider';
+// Scheduling button: owners manage the timetable and requests, clients book.
+import React, { useLayoutEffect } from 'react';
+import { useNavigation } from 'expo-router';
+import { ClientSchedule } from '../src/screens/ClientSchedule';
+import { OwnerSchedule } from '../src/screens/OwnerSchedule';
 import { useSession } from '../src/lib/session';
 import { themeFor } from '../src/theme/themes';
 
-export default function Placeholder() {
-  const { t } = useI18n();
-  const { home } = useSession();
+export default function Schedule() {
+  const { home, buttons, profile } = useSession();
+  const navigation = useNavigation();
   const theme = themeFor(home?.theme_key);
-  return (
-    <Screen header theme={theme}>
-      <Muted theme={theme}>{t('common.comingSoon')}</Muted>
-    </Screen>
-  );
+  const title = buttons.find((b) => b.type === 'scheduling')?.label ?? '';
+
+  useLayoutEffect(() => { navigation.setOptions({ title }); }, [navigation, title]);
+
+  return profile?.role === 'owner' ? <OwnerSchedule theme={theme} /> : <ClientSchedule theme={theme} />;
 }

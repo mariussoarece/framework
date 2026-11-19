@@ -14,7 +14,7 @@ const ts = require(process.env.TS_PATH || 'typescript');
 
 // Compile the .ts modules we test into a temp folder as .mjs files.
 const out = mkdtempSync(join(tmpdir(), 'mobile-logic-'));
-for (const rel of ['src/i18n/en.ts', 'src/i18n/ro.ts', 'src/i18n/translate.ts', 'src/lib/richtext.ts', 'src/lib/format.ts', 'src/lib/video.ts']) {
+for (const rel of ['src/i18n/en.ts', 'src/i18n/ro.ts', 'src/i18n/translate.ts', 'src/lib/richtext.ts', 'src/lib/format.ts', 'src/lib/video.ts', 'src/lib/schedule.ts']) {
   const src = readFileSync(join(here, '..', rel), 'utf8');
   const js = ts.transpileModule(src, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } })
     .outputText.replace(/from '(\.\.?\/[^']+)'/g, (_, p) => `from './${p.split('/').pop()}.mjs'`);
@@ -27,6 +27,7 @@ const { translate, errorText, pickLanguage } = await load('translate.mjs');
 const { toBlocks, plainText, safeHref, cssColor } = await load('richtext.mjs');
 const { workoutSummary, restText, duration, positiveInt } = await load('format.mjs');
 const { pickVideoUrl } = await load('video.mjs');
+const sch = await load('schedule.mjs');
 
 test('Romanian has exactly the English keys, none empty', () => {
   assert.deepEqual(Object.keys(ro).sort(), Object.keys(en).sort());
@@ -128,4 +129,34 @@ test('video quality choice', () => {
   assert.equal(pickVideoUrl(both, '1080', true), 'H');
   assert.equal(pickVideoUrl(only720, '1080', false), 'L', 'falls back when no 1080p version');
   assert.equal(pickVideoUrl({}, 'auto', false), null);
+});
+
+test('scheduling: times, prices, dates', () => {
+  assert.equal(sch.parseTime('9'), '09:00');
+  assert.equal(sch.parseTime('9:5'), '09:05');
+  assert.equal(sch.parseTime('17.30'), '17:30');
+  for (const bad of ['24:00', '12:60', 'ab', '', '1:2:3']) assert.equal(sch.parseTime(bad), null, bad);
+  assert.equal(sch.minutesOf('09:30'), 570);
+  assert.equal(sch.parseMoney('30'), 3000);
+  assert.equal(sch.parseMoney('30,5'), 3050);
+  assert.equal(sch.parseMoney('30.05'), 3005);
+  assert.equal(sch.parseMoney('-1'), null);
+  assert.equal(sch.parseMoney('1.234'), null);
+  assert.ok(sch.isIsoDate('2026-12-25'));
+  assert.ok(!sch.isIsoDate('2026-02-30'));
+  assert.ok(!sch.isIsoDate('25.12.2026'));
+});
+
+test('scheduling: days in the organization time zone', () => {
+  // 23:30 UTC on 19 Nov is already 20 Nov in Bucharest (UTC+2)
+  assert.equal(sch.dayKey('2026-11-19T23:30:00Z', 'Europe/Bucharest'), '2026-11-20');
+  assert.equal(sch.clock('2026-11-20T07:00:00+00:00', 'Europe/Bucharest', 'ro'), '09:00');
+  assert.equal(sch.weekdayName(1, 'en'), 'Monday');
+  assert.equal(sch.weekdayName(0, 'ro'), 'duminică');
+  assert.match(sch.dayLabel('2026-11-20', 'en'), /Friday/);
+  const g = sch.groupByDay([
+    { starts_at: '2026-11-20T07:00:00Z' }, { starts_at: '2026-11-20T08:00:00Z' }, { starts_at: '2026-11-21T07:00:00Z' },
+  ], 'Europe/Bucharest');
+  assert.deepEqual(g.map((d) => [d.day, d.items.length]), [['2026-11-20', 2], ['2026-11-21', 1]]);
+  assert.match(sch.formatMoney(3000, 'EUR', 'ro'), /30/);
 });

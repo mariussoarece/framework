@@ -131,3 +131,30 @@ const styles = StyleSheet.create({
   choice: { borderRadius: 12, padding: 16, gap: 4 },
   choiceTitle: { fontSize: 17, fontWeight: '600' },
 });
+
+// Row of tabs (segmented control).
+export function Tabs<K extends string>({ tabs, value, onChange, theme = DEFAULT_THEME }: {
+  tabs: { key: K; label: string; badge?: number }[]; value: K; onChange: (k: K) => void; theme?: Theme;
+}) {
+  return (
+    <View style={[tabStyles.row, { borderColor: theme.border, backgroundColor: theme.surface }]} accessibilityRole="tablist">
+      {tabs.map((tab) => {
+        const on = tab.key === value;
+        return (
+          <Pressable key={tab.key} onPress={() => onChange(tab.key)} accessibilityRole="tab" accessibilityState={{ selected: on }}
+            style={[tabStyles.tab, on ? { backgroundColor: theme.primary } : null]}>
+            <Text numberOfLines={1} style={[tabStyles.text, { color: on ? theme.onPrimary : theme.text }]}>
+              {tab.label}{tab.badge ? ` (${tab.badge})` : ''}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+const tabStyles = StyleSheet.create({
+  row: { flexDirection: 'row', borderWidth: 1, borderRadius: 12, padding: 3, gap: 3 },
+  tab: { flex: 1, borderRadius: 9, paddingVertical: 10, paddingHorizontal: 4, alignItems: 'center' },
+  text: { fontSize: 14, fontWeight: '700' },
+});
