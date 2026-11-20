@@ -87,6 +87,22 @@ export const handlers = {
     }
   },
 
+  // A client reported content: tell every super admin.
+  async 'report.created'(ctx, p) {
+    const db = ctx.db.service;
+    const r = await db.one('content_reports', `id=${eq(p.report_id)}`);
+    if (!r) return;
+    const org = await db.one('organizations', `id=${eq(r.organization_id)}&select=name`);
+    const w = r.workout_id ? await db.one('workouts', `id=${eq(r.workout_id)}&select=name`) : null;
+    const admins = await db.select('profiles', 'role=eq.super_admin&select=id');
+    for (const a of admins || []) {
+      await ctx.push.toUser(ctx.db, a.id, (l) => ({
+        ...t(l, 'report_new', { org: org?.name ?? '', what: w?.name ?? r.reason.slice(0, 60) }),
+        data: { type: 'report', report_id: r.id },
+      }));
+    }
+  },
+
   async 'media.deleted'(ctx, p) {
     await deleteMediaFiles(ctx, p.paths || []);
   },

@@ -321,3 +321,47 @@ export async function listBookings(opts: { owner: boolean; upcomingOnly: boolean
   else q = q.lt('ends_at', new Date().toISOString()).limit(50);
   return check(await q) as unknown as Booking[];
 }
+
+// ---------------------------------------------------------------- reports
+export const REPORT_REASONS = ['inappropriate', 'dangerous', 'copyright', 'other'] as const;
+export type ReportReason = typeof REPORT_REASONS[number];
+
+export async function reportWorkout(orgId: string, workoutId: string, reporterId: string, reason: string): Promise<void> {
+  check(await supabase.from('content_reports').insert({
+    organization_id: orgId, workout_id: workoutId, reporter_id: reporterId, reason,
+  }));
+}
+
+// ---------------------------------------------------------------- super admin: organizations and reports
+export type AdminOrg = {
+  id: string; name: string; join_code: string; plan: string; status: 'trial' | 'active' | 'paused';
+  is_default: boolean; trial_ends_at: string; created_at: string; owner_email: string | null;
+  clients: number; open_reports: number;
+};
+
+export async function adminOrganizations(): Promise<AdminOrg[]> {
+  return check(await supabase.rpc('admin_organizations')) as AdminOrg[];
+}
+
+export async function adminSetOrgStatus(id: string, status: 'active' | 'paused'): Promise<void> {
+  check(await supabase.rpc('admin_set_org_status', { p_org: id, p_status: status }));
+}
+
+export async function setDefaultOrganization(id: string): Promise<void> {
+  check(await supabase.rpc('set_default_organization', { p_org: id }));
+}
+
+export type AdminReport = {
+  id: string; status: string; reason: string; created_at: string;
+  organization_id: string; organization_name: string;
+  workout_id: string | null; workout_name: string | null;
+  media_id: string | null; media_kind: string | null; reporter_email: string | null;
+};
+
+export async function adminReports(): Promise<AdminReport[]> {
+  return check(await supabase.rpc('admin_reports', { p_status: 'open' })) as AdminReport[];
+}
+
+export async function resolveReport(id: string): Promise<void> {
+  check(await supabase.rpc('resolve_report', { p_id: id }));
+}

@@ -9,6 +9,7 @@ const TEXT = {
     booking_cancelled_by_owner: ['Booking cancelled', '{org} cancelled your session on {time}. Any payment is refunded.'],
     media_rejected: ['Upload not approved', 'One of your uploads was not approved: {reason}'],
     media_published: ['Upload approved', 'Your upload is now visible to your clients.'],
+    report_new: ['New content report', '{org}: {what}'],
     org_closed_subject: '{org} has closed',
     org_closed_body:
       'Hello,\n\n{org} has closed its account in the app.\n\n'
@@ -26,6 +27,7 @@ const TEXT = {
     booking_cancelled_by_owner: ['Programare anulată', '{org} a anulat ședința din {time}. Orice plată se rambursează.'],
     media_rejected: ['Încărcare neaprobată', 'Unul dintre fișierele tale nu a fost aprobat: {reason}'],
     media_published: ['Încărcare aprobată', 'Fișierul tău este acum vizibil pentru clienți.'],
+    report_new: ['Conținut raportat', '{org}: {what}'],
     org_closed_subject: '{org} s-a închis',
     org_closed_body:
       'Bună,\n\n{org} și-a închis contul în aplicație.\n\n'

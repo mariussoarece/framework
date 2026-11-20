@@ -40,7 +40,8 @@ npm test                      # translations and rich-text tests
 | Section | `app/section/[id].tsx`, `app/section-edit.tsx` | Section → workouts. Owner: big **+ Add workout**; edit name and cover, delete |
 | Workout | `app/workout/[id].tsx` | Pictures/videos on top, sets × reps or time, rest, warning, what to avoid, description |
 | Add / edit workout | `app/workout-edit.tsx` | Name, sets, repetitions **or** time, rest, rich-text description, pictures/videos with upload progress, warning, avoid, sections |
-| Admin | `app/admin.tsx` | Super admin: preview uploads, approve or reject (with a reason for the owner) |
+| Admin | `app/admin.tsx` | Super admin. Uploads: preview, approve or reject. Reports: see what clients reported, open or delete the workout, mark as handled. Organizations: owner, plan, clients, reports; pause/activate, make default, close |
+| Report | `app/report.tsx` | Client: report a workout (inappropriate, dangerous, copied, other); the super admin gets a notification |
 | Scheduling | `app/schedule.tsx`, `src/screens/` | Client: Book (classes one per line with instructor and places; open hours as time buttons), Week, My bookings. Owner: Requests, Upcoming, Week, Timetable (open hours or classes, several days at once, every week or N weeks; clashes refused), Time off (whole days, blocked sessions) |
 
 Rich text in Expo Go: bold, italic, underline, strike, lists, links, headings, colors.

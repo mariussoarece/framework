@@ -92,7 +92,7 @@ test('server end to end', { skip: !DB && 'set TEST_DB_URL to run' }, async () =>
     await db.as(T.client2).rpc('join_organization', { p_code: 'yogatest' });
     await db.as(T.client2).update('profiles', `id=eq.${id.client2}`, { language: 'ro' });
     await db.service.insert('profiles', { id: id.admin, email: 'admin@example.com', role: 'super_admin' });
-    for (const who of ['owner', 'client', 'client2']) {
+    for (const who of ['owner', 'client', 'client2', 'admin']) {
       await db.as(T[who]).insert('devices', { push_token: `tok-${who}`, user_id: id[who], platform: who === 'client2' ? 'android' : 'ios' });
     }
 
@@ -194,6 +194,15 @@ test('server end to end', { skip: !DB && 'set TEST_DB_URL to run' }, async () =>
     await drain();
     assert.ok(stripeCalls.some((c) => c[0] === 'cancel' && c[1] === 'pi_2'), 'authorization released on decline');
     assert.deepEqual(titles('tok-client2'), ['Programare refuzată'], 'Romanian notification');
+
+    // ------------------------------------------------------------ a client reports a workout
+    const w = await db.as(T.owner).insert('workouts', { organization_id: org.id, name: 'Cobra Pose', sets: 3, reps: 10 });
+    await db.as(T.client).insert('content_reports', {
+      organization_id: org.id, workout_id: w.id, reporter_id: id.client, reason: 'Inappropriate: test',
+    });
+    await drain();
+    assert.deepEqual(pushes.filter((x) => x.token === 'tok-admin').map((x) => [x.title, x.body]),
+      [['New content report', 'Yoga Test: Cobra Pose']], 'super admin is notified of the report');
 
     // ------------------------------------------------------------ owner deletes their account
     const del = await api('DELETE', '/api/account', { token: T.owner });

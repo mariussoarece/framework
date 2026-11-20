@@ -270,6 +270,46 @@ reset role;
 select test.ok((select status || '/' || cancelled_by from public.bookings where client_id = :u4 and price_cents = 2000) = 'cancelled/system',
                'expired booking is cancelled by the system');
 
+-- ---------------------------------------------------------------- owner deletes media
+reset role; select test.claims(:u1, 'owner.a@example.com'); set role authenticated;
+insert into public.media (organization_id, kind, original_path, uploaded_by)
+  select app.my_org(), 'image', 'uploads/old-background.jpg', app.uid();
+delete from public.media where original_path = 'uploads/old-background.jpg';
+reset role;
+select test.ok((select count(*) from public.events where type = 'media.deleted') = 1,
+  'owner can delete own media; the server is told to remove the files');
+
+-- ---------------------------------------------------------------- reports and admin tools
+reset role; select test.claims(:u3, 'client.a@example.com'); set role authenticated;
+insert into public.content_reports (organization_id, workout_id, reporter_id, reason)
+  select organization_id, id, app.uid(), 'Inappropriate: test' from public.workouts limit 1;
+select test.fails($$insert into public.content_reports (organization_id, workout_id, reporter_id, reason)
+  select organization_id, id, app.uid(), 'again' from public.workouts limit 1$$,
+  'content_reports_one_open_uq', 'the same person cannot report the same workout twice while open');
+reset role; select test.claims(:u4, 'client.b@example.com'); set role authenticated;
+select test.fails($$insert into public.content_reports (organization_id, workout_id, reporter_id, reason)
+  values (current_setting('test.org_a')::uuid, null, app.uid(), 'x x x')$$,
+  'row-level security', 'a client cannot report another organization''s content');
+reset role;
+select test.ok((select count(*) from public.events where type = 'report.created') = 1, 'a report notifies the admin (event)');
+select test.claims(:u1, 'owner.a@example.com'); set role authenticated;
+select test.fails($$select * from public.admin_organizations()$$, 'forbidden', 'owners cannot use admin tools');
+reset role; select test.claims(:u5, 'admin@example.com'); set role authenticated;
+select test.ok((select clients || '/' || open_reports || ' ' || owner_email from public.admin_organizations()
+  where join_code = 'yogawithmarius') = '2/1 owner.a@example.com', 'admin sees clients, open reports and owner per organization');
+select test.ok((select workout_name || ' / ' || reporter_email from public.admin_reports())
+  = 'Cobra Pose / client.a@example.com', 'admin sees the report with workout and reporter');
+select public.admin_set_org_status(current_setting('test.org_a')::uuid, 'paused');
+reset role; select test.claims(:u3, 'client.a@example.com'); set role authenticated;
+select test.fails($$select public.request_booking((select starts_at from public.available_slots() limit 1))$$,
+  'organization_unavailable', 'clients of a paused organization cannot book');
+reset role; select test.claims(:u5, 'admin@example.com'); set role authenticated;
+select public.admin_set_org_status(current_setting('test.org_a')::uuid, 'active');
+select public.resolve_report((select id from public.admin_reports() limit 1));
+select test.ok((select count(*) from public.admin_reports()) = 0, 'resolved report leaves the open list');
+select test.fails($$select public.admin_set_org_status(current_setting('test.org_a')::uuid, 'closed')$$,
+  'invalid_status', 'closing only through the server (refunds, emails)');
+
 -- ---------------------------------------------------------------- closing an organization
 reset role;
 select test.ok((select count(*) from app.close_organization(current_setting('test.org_a')::uuid)) = 2,

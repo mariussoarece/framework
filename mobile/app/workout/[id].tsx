@@ -79,6 +79,14 @@ export default function WorkoutScreen() {
           <RichText doc={w.description} theme={theme} />
         </View>
       ) : null}
+
+      {profile?.role === 'client' ? (
+        <Pressable onPress={() => router.push({ pathname: '/report', params: { workout: w.id, name: w.name } })}
+          accessibilityRole="button" style={styles.report} hitSlop={8}>
+          <Ionicons name="flag-outline" size={16} color={theme.muted} />
+          <Text style={{ color: theme.muted, fontSize: 14, textDecorationLine: 'underline' }}>{t('report.link')}</Text>
+        </Pressable>
+      ) : null}
     </ScrollView>
   );
 }
@@ -111,4 +119,5 @@ const styles = StyleSheet.create({
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
   notice: { flexDirection: 'row', gap: 12, padding: 14, borderRadius: 14 },
   card: { borderRadius: 16, padding: 18 },
+  report: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center', marginTop: 12, padding: 8 },
 });

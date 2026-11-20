@@ -53,4 +53,6 @@ export async function mediaLinks(id: string): Promise<MediaLinks> {
 
 export const api = {
   deleteAccount: () => call<{ deleted: boolean }>('DELETE', '/api/account'),
+  closeOrganization: (id: string) =>
+    call<{ clients: number }>('POST', `/api/admin/organizations/${encodeURIComponent(id)}/close`),
 };
