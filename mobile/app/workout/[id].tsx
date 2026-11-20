@@ -1,5 +1,5 @@
 // A workout: pictures/videos on top, then sets, repetitions or time, rest, description,
-// warning and what to avoid. The owner gets an Edit button.
+// what to avoid and the warning. The owner gets an Edit button.
 import { ScreenBackground } from '../../src/components/ScreenBackground';
 import React, { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -69,17 +69,17 @@ export default function WorkoutScreen() {
           </View>
         ) : null}
 
-        {w.warning ? (
-          <Notice icon="warning-outline" title={t('workout.warningTitle')} text={w.warning} bg="#FFF4E5" fg="#7A4100" />
-        ) : null}
-        {w.avoid ? (
-          <Notice icon="hand-left-outline" title={t('workout.avoidTitle')} text={w.avoid} bg="#FDECEA" fg="#8C1D18" />
-        ) : null}
-
         {w.description ? (
           <View style={[styles.card, { backgroundColor: theme.surface }]}>
             <RichText doc={w.description} theme={theme} />
           </View>
+        ) : null}
+
+        {w.avoid ? (
+          <Notice icon="hand-left-outline" title={t('workout.avoidTitle')} text={w.avoid} bg="#FDECEA" fg="#8C1D18" />
+        ) : null}
+        {w.warning ? (
+          <Notice icon="warning-outline" title={t('workout.warningTitle')} text={w.warning} bg="#FFF4E5" fg="#7A4100" />
         ) : null}
 
         {profile?.role === 'client' ? (

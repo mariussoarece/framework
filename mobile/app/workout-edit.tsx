@@ -231,10 +231,10 @@ function Form(p: FormProps) {
       <Button theme={theme} kind="secondary" label={t('media.add')} onPress={addMedia} disabled={p.busy} />
       <Muted theme={theme}>{t('media.approvalNote')}</Muted>
 
-      <Field theme={theme} label={t('workout.warning')} hint={t('workout.warningHint')} value={p.warning}
-        onChangeText={p.setWarning} multiline maxLength={1000} />
       <Field theme={theme} label={t('workout.avoid')} hint={t('workout.avoidHint')} value={p.avoid}
         onChangeText={p.setAvoid} multiline maxLength={1000} />
+      <Field theme={theme} label={t('workout.warning')} hint={t('workout.warningHint')} value={p.warning}
+        onChangeText={p.setWarning} multiline maxLength={1000} />
 
       <Text style={[styles.label, { color: theme.text }]}>{t('workout.sections')}</Text>
       {p.sections.map((s) => (
