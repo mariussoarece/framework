@@ -1,5 +1,6 @@
 // Owner: booking requests, upcoming sessions, the week, the timetable (open hours and
 // classes, several days at once, every week or N weeks), and time off (whole days, blocked sessions).
+import { ScreenBackground } from '../components/ScreenBackground';
 import React, { useCallback, useState } from 'react';
 import { KeyboardScroll } from '../components/KeyboardScroll';
 import { Alert, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -198,219 +199,221 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
     a.valid_until ? t('schedule.until', { date: dayLabel(a.valid_until, language) }) : t('schedule.everyWeek');
 
   return (
-    <KeyboardScroll
-      contentInsetAdjustmentBehavior="automatic"
-      style={{ flex: 1, backgroundColor: theme.background }}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-      refreshControl={<RefreshControl refreshing={refreshing}
-        onRefresh={async () => {
-          setRefreshing(true);
-          await load();
-          if (blockDay) await showDay(blockDay);
-          setRefreshing(false);
-        }} />}
-    >
-      <Tabs compact theme={theme} value={tab} onChange={(k) => { setTab(k); setError(null); }} tabs={[
-        { key: 'hours', label: t('schedule.timetable') },
-        { key: 'week', label: t('schedule.week') },
-        { key: 'requests', label: t('schedule.requests'), badge: requests.length },
-        { key: 'upcoming', label: t('schedule.upcoming') },
-        { key: 'off', label: t('schedule.timeOff') },
-      ]} />
-      <Message text={error} />
+    <ScreenBackground theme={theme}>
+      <KeyboardScroll
+        contentInsetAdjustmentBehavior="automatic"
+        style={{ flex: 1, backgroundColor: 'transparent' }}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={refreshing}
+          onRefresh={async () => {
+            setRefreshing(true);
+            await load();
+            if (blockDay) await showDay(blockDay);
+            setRefreshing(false);
+          }} />}
+      >
+        <Tabs compact theme={theme} value={tab} onChange={(k) => { setTab(k); setError(null); }} tabs={[
+          { key: 'hours', label: t('schedule.timetable') },
+          { key: 'week', label: t('schedule.week') },
+          { key: 'requests', label: t('schedule.requests'), badge: requests.length },
+          { key: 'upcoming', label: t('schedule.upcoming') },
+          { key: 'off', label: t('schedule.timeOff') },
+        ]} />
+        <Message text={error} />
 
-      {tab === 'requests' ? (
-        <>
-          {!requests.length ? <Muted theme={theme}>{t('schedule.noRequests')}</Muted> : null}
-          {requests.map((b) => (
-            <BookingCard key={b.id} booking={b} tz={tz} theme={theme} showClient
-              onAccept={() => run(() => decideBooking(b.id, true))}
-              onDecline={() => run(() => decideBooking(b.id, false))} />
-          ))}
-        </>
-      ) : null}
+        {tab === 'requests' ? (
+          <>
+            {!requests.length ? <Muted theme={theme}>{t('schedule.noRequests')}</Muted> : null}
+            {requests.map((b) => (
+              <BookingCard key={b.id} booking={b} tz={tz} theme={theme} showClient
+                onAccept={() => run(() => decideBooking(b.id, true))}
+                onDecline={() => run(() => decideBooking(b.id, false))} />
+            ))}
+          </>
+        ) : null}
 
-      {tab === 'upcoming' ? (
-        <>
-          {!upcoming.length ? <Muted theme={theme}>{t('schedule.noBookings')}</Muted> : null}
-          {upcoming.map((b) => (
-            <BookingCard key={b.id} booking={b} tz={tz} theme={theme} showClient
-              onCancel={() => Alert.alert(t('schedule.cancel'), t('schedule.cancelConfirm', {
-                day: dayLabel(dayKey(b.starts_at, tz), language), time: clock(b.starts_at, tz, language),
-              }), [
-                { text: t('schedule.keep'), style: 'cancel' },
-                { text: t('schedule.yesCancel'), style: 'destructive', onPress: () => run(() => cancelBooking(b.id)) },
-              ])} />
-          ))}
-        </>
-      ) : null}
+        {tab === 'upcoming' ? (
+          <>
+            {!upcoming.length ? <Muted theme={theme}>{t('schedule.noBookings')}</Muted> : null}
+            {upcoming.map((b) => (
+              <BookingCard key={b.id} booking={b} tz={tz} theme={theme} showClient
+                onCancel={() => Alert.alert(t('schedule.cancel'), t('schedule.cancelConfirm', {
+                  day: dayLabel(dayKey(b.starts_at, tz), language), time: clock(b.starts_at, tz, language),
+                }), [
+                  { text: t('schedule.keep'), style: 'cancel' },
+                  { text: t('schedule.yesCancel'), style: 'destructive', onPress: () => run(() => cancelBooking(b.id)) },
+                ])} />
+            ))}
+          </>
+        ) : null}
 
-      {tab === 'week' ? <WeekView theme={theme} tz={tz} reloadKey={reloadKey} /> : null}
+        {tab === 'week' ? <WeekView theme={theme} tz={tz} reloadKey={reloadKey} /> : null}
 
-      {tab === 'hours' ? (
-        <>
-          {!entries.length && !form ? <Muted theme={theme}>{t('schedule.noHours')}</Muted> : null}
-          {!form ? WEEK_ORDER.map((wd) => entries.filter((h) => h.weekday === wd).map((h) => (
-            <Pressable key={h.id} onPress={() => editEntry(h)} accessibilityRole="button"
-              style={[styles.entry, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={[styles.entryDay, { color: theme.text }]}>
-                  {weekdayName(h.weekday, language)}  ·  {shortTime(h.start_time)}–{shortTime(h.end_time)}
-                </Text>
-                <Text style={{ color: theme.text, fontSize: 15, fontWeight: '600' }}>
-                  {h.kind === 'class'
-                    ? `${h.title}${h.instructor ? ` · ${t('schedule.with', { name: h.instructor })}` : ''}`
-                    : `${t('schedule.typeOpen')} · ${t('schedule.sessions', { n: h.slot_minutes })}`}
-                </Text>
-                <Text style={{ color: theme.muted, fontSize: 14 }}>
-                  {[`${t('schedule.attendants')}: ${h.capacity}`,
-                    h.price_cents ? formatMoney(h.price_cents, h.currency, language) : '', validity(h)]
-                    .filter(Boolean).join('  ·  ')}
-                </Text>
-              </View>
-              <Pressable onPress={() => removeEntry(h)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('common.delete')}>
-                <Ionicons name="trash-outline" size={22} color="#B3261E" />
-              </Pressable>
-            </Pressable>
-          ))) : null}
-
-          {form ? (
-            <View style={[styles.form, { backgroundColor: theme.surface, borderColor: theme.primary }]}>
-              <Text style={[styles.formTitle, { color: theme.text }]}>
-                {form.id ? t('schedule.editEntry') : t('schedule.addEntry')}
-              </Text>
-              {!form.id ? (
-                <>
-                  <Choice theme={theme} title={t('schedule.typeOpen')} hint={t('schedule.typeOpenHint')}
-                    selected={form.kind === 'open'} onPress={() => setForm({ ...emptyForm('open'), weekdays: form.weekdays })} />
-                  <Choice theme={theme} title={t('schedule.typeClass')} hint={t('schedule.typeClassHint')}
-                    selected={form.kind === 'class'} onPress={() => setForm({ ...emptyForm('class'), weekdays: form.weekdays })} />
-                </>
-              ) : null}
-
-              <Text style={[styles.label, { color: theme.text }]}>{t('schedule.days')}</Text>
-              <View style={styles.chips}>
-                {WEEK_ORDER.map((wd) => {
-                  const on = form.weekdays.includes(wd);
-                  return (
-                    <Pressable key={wd} onPress={() => toggleDay(wd)} accessibilityRole="checkbox" accessibilityState={{ checked: on }}
-                      style={[styles.chip, { borderColor: theme.primary, backgroundColor: on ? theme.primary : 'transparent' }]}>
-                      <Text style={{ color: on ? theme.onPrimary : theme.primary, fontWeight: '700' }}>
-                        {weekdayName(wd, language).slice(0, 3)}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-
-              {form.kind === 'class' ? (
-                <>
-                  {labelled(t('schedule.className'), input(form.title, (v) => setForm({ ...form, title: v }), { placeholder: 'Yoga Flow' }))}
-                  {labelled(t('schedule.instructor'), input(form.instructor, (v) => setForm({ ...form, instructor: v })))}
-                  <View style={styles.pair}>
-                    <TimeField flex theme={theme} label={t('schedule.startTime')} value={form.from}
-                      onChange={(v) => setForm({ ...form, from: v })} />
-                    <OptionField flex theme={theme} label={t('schedule.classLength')} value={Number(form.length)} options={SESSION_LENGTHS}
-                      format={lengthLabel} onChange={(n) => setForm({ ...form, length: String(n) })} />
-                  </View>
-                </>
-              ) : (
-                <>
-                  <View style={styles.pair}>
-                    <TimeField flex theme={theme} label={t('schedule.from')} value={form.from}
-                      onChange={(v) => setForm({ ...form, from: v })} />
-                    <TimeField flex theme={theme} label={t('schedule.to')} value={form.to}
-                      onChange={(v) => setForm({ ...form, to: v })} />
-                  </View>
-                  <OptionField flex theme={theme} label={t('schedule.length')} value={Number(form.length)} options={SESSION_LENGTHS}
-                      format={lengthLabel} onChange={(n) => setForm({ ...form, length: String(n) })} />
-                </>
-              )}
-
-              <View style={styles.pair}>
-                <OptionField flex theme={theme} label={t('schedule.attendants')} value={Number(form.capacity)}
-                  options={range1(MAX_ATTENDANTS)} format={(n) => String(n)}
-                  onChange={(n) => setForm({ ...form, capacity: String(n) })} />
-                {paid ? labelled(t('schedule.price'), input(form.price, (v) => setForm({ ...form, price: v }), { numeric: true, placeholder: '30' })) : <View style={{ flex: 1 }} />}
-              </View>
-              {!paid ? <Muted theme={theme}>{t('schedule.priceNone')}</Muted> : null}
-
-              <Text style={[styles.label, { color: theme.text }]}>{t('schedule.repeat')}</Text>
-              <Choice theme={theme} title={t('schedule.everyWeek')} selected={form.repeat === 'always'}
-                onPress={() => setForm({ ...form, repeat: 'always' })} />
-              <Choice theme={theme} title={t('schedule.forWeeks')} selected={form.repeat === 'weeks'}
-                onPress={() => setForm({ ...form, repeat: 'weeks' })} />
-              {form.repeat === 'weeks' ? (
-                <View style={styles.half}>
-                  <OptionField theme={theme} label={t('schedule.weeks')} value={Number(form.weeks)}
-                    options={range1(MAX_WEEKS)} format={(n) => (n === 1 ? t('schedule.week1') : t('schedule.weeksN', { n }))}
-                    onChange={(n) => setForm({ ...form, weeks: String(n) })} />
+        {tab === 'hours' ? (
+          <>
+            {!entries.length && !form ? <Muted theme={theme}>{t('schedule.noHours')}</Muted> : null}
+            {!form ? WEEK_ORDER.map((wd) => entries.filter((h) => h.weekday === wd).map((h) => (
+              <Pressable key={h.id} onPress={() => editEntry(h)} accessibilityRole="button"
+                style={[styles.entry, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={[styles.entryDay, { color: theme.text }]}>
+                    {weekdayName(h.weekday, language)}  ·  {shortTime(h.start_time)}–{shortTime(h.end_time)}
+                  </Text>
+                  <Text style={{ color: theme.text, fontSize: 15, fontWeight: '600' }}>
+                    {h.kind === 'class'
+                      ? `${h.title}${h.instructor ? ` · ${t('schedule.with', { name: h.instructor })}` : ''}`
+                      : `${t('schedule.typeOpen')} · ${t('schedule.sessions', { n: h.slot_minutes })}`}
+                  </Text>
+                  <Text style={{ color: theme.muted, fontSize: 14 }}>
+                    {[`${t('schedule.attendants')}: ${h.capacity}`,
+                      h.price_cents ? formatMoney(h.price_cents, h.currency, language) : '', validity(h)]
+                      .filter(Boolean).join('  ·  ')}
+                  </Text>
                 </View>
-              ) : null}
-              <DateField theme={theme} label={t('schedule.startsOn')} value={form.startsOn}
-                minimum={form.id && form.startsOn < today(tz) ? form.startsOn : today(tz)}
-                onChange={(v) => setForm({ ...form, startsOn: v })} />
-
-              <View style={styles.pair}>
-                <View style={{ flex: 1 }}><Button theme={theme} kind="secondary" label={t('common.cancel')} onPress={() => { setForm(null); setError(null); }} /></View>
-                <View style={{ flex: 1 }}><Button theme={theme} label={t('common.save')} onPress={saveForm} /></View>
-              </View>
-            </View>
-          ) : (
-            <Button theme={theme} label={t('schedule.addEntry')} onPress={() => setForm(emptyForm('open'))} />
-          )}
-          <Muted theme={theme}>{t('schedule.timezone', { tz })}</Muted>
-        </>
-      ) : null}
-
-      {tab === 'off' ? (
-        <>
-          <Text style={[styles.formTitle, { color: theme.text }]}>{t('schedule.wholeDays')}</Text>
-          {!daysOff.length ? <Muted theme={theme}>{t('schedule.noDaysOff')}</Muted> : null}
-          {daysOff.map((d) => (
-            <View key={d.id} style={[styles.entry, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-              <Text style={[styles.entryDay, { color: theme.text, flex: 1 }]}>{dayLabel(d.day, language)}</Text>
-              <Pressable onPress={async () => { await run(() => deleteDayOff(d.id)); if (blockDay === d.day) showDay(d.day); }}
-                hitSlop={10} accessibilityRole="button"
-                accessibilityLabel={t('common.delete')}>
-                <Ionicons name="trash-outline" size={22} color="#B3261E" />
-              </Pressable>
-            </View>
-          ))}
-          <DateField theme={theme} label={t('schedule.addDayOff')} value={newDay} minimum={today(tz)} onChange={setNewDay} />
-          <Button theme={theme} kind="secondary" label={t('schedule.addDayOff')} onPress={addOff} disabled={!newDay.trim()} />
-
-          <Text style={[styles.formTitle, { color: theme.text, marginTop: 12 }]}>{t('schedule.blockTimes')}</Text>
-          <Muted theme={theme}>{t('schedule.blockHint')}</Muted>
-          <DateField theme={theme} label={t('schedule.date')} value={blockDay} minimum={today(tz)}
-            onChange={(v) => { setBlockDay(v); showDay(v); }} />
-          {blockDay && daysOff.some((x) => x.day === blockDay)
-            ? <Message kind="info" text={t('schedule.dayIsOff')} />
-            : blockList && !blockList.length ? <Muted theme={theme}>{t('schedule.noSessionsDay')}</Muted> : null}
-          {blockList && blockList.length > 0 && !daysOff.some((x) => x.day === blockDay) ? (
-            <View style={styles.slots}>
-              {blockList.map((s) => (
-                <Pressable key={s.starts_at} onPress={() => toggleBlock(s)} accessibilityRole="switch"
-                  accessibilityState={{ checked: s.blocked }}
-                  style={[styles.slot, {
-                    borderColor: s.blocked ? '#B3261E' : theme.primary,
-                    backgroundColor: s.blocked ? '#FDECEA' : 'transparent',
-                  }]}>
-                  <Text style={{ fontSize: 16, fontWeight: '700', color: s.blocked ? '#8C1D18' : theme.primary }}>
-                    {clock(s.starts_at, tz, language)}–{clock(s.ends_at, tz, language)}
-                  </Text>
-                  {s.title ? <Text style={{ fontSize: 12, color: theme.muted }} numberOfLines={1}>{s.title}</Text> : null}
-                  <Text style={{ fontSize: 12, color: s.blocked ? '#8C1D18' : theme.muted }}>
-                    {s.blocked ? t('schedule.blocked') : s.booked ? t('schedule.booked', { n: s.booked }) : t('schedule.free')}
-                  </Text>
+                <Pressable onPress={() => removeEntry(h)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('common.delete')}>
+                  <Ionicons name="trash-outline" size={22} color="#B3261E" />
                 </Pressable>
-              ))}
-            </View>
-          ) : null}
-        </>
-      ) : null}
-    </KeyboardScroll>
+              </Pressable>
+            ))) : null}
+
+            {form ? (
+              <View style={[styles.form, { backgroundColor: theme.surface, borderColor: theme.primary }]}>
+                <Text style={[styles.formTitle, { color: theme.text }]}>
+                  {form.id ? t('schedule.editEntry') : t('schedule.addEntry')}
+                </Text>
+                {!form.id ? (
+                  <>
+                    <Choice theme={theme} title={t('schedule.typeOpen')} hint={t('schedule.typeOpenHint')}
+                      selected={form.kind === 'open'} onPress={() => setForm({ ...emptyForm('open'), weekdays: form.weekdays })} />
+                    <Choice theme={theme} title={t('schedule.typeClass')} hint={t('schedule.typeClassHint')}
+                      selected={form.kind === 'class'} onPress={() => setForm({ ...emptyForm('class'), weekdays: form.weekdays })} />
+                  </>
+                ) : null}
+
+                <Text style={[styles.label, { color: theme.text }]}>{t('schedule.days')}</Text>
+                <View style={styles.chips}>
+                  {WEEK_ORDER.map((wd) => {
+                    const on = form.weekdays.includes(wd);
+                    return (
+                      <Pressable key={wd} onPress={() => toggleDay(wd)} accessibilityRole="checkbox" accessibilityState={{ checked: on }}
+                        style={[styles.chip, { borderColor: theme.primary, backgroundColor: on ? theme.primary : 'transparent' }]}>
+                        <Text style={{ color: on ? theme.onPrimary : theme.primary, fontWeight: '700' }}>
+                          {weekdayName(wd, language).slice(0, 3)}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                {form.kind === 'class' ? (
+                  <>
+                    {labelled(t('schedule.className'), input(form.title, (v) => setForm({ ...form, title: v }), { placeholder: 'Yoga Flow' }))}
+                    {labelled(t('schedule.instructor'), input(form.instructor, (v) => setForm({ ...form, instructor: v })))}
+                    <View style={styles.pair}>
+                      <TimeField flex theme={theme} label={t('schedule.startTime')} value={form.from}
+                        onChange={(v) => setForm({ ...form, from: v })} />
+                      <OptionField flex theme={theme} label={t('schedule.classLength')} value={Number(form.length)} options={SESSION_LENGTHS}
+                        format={lengthLabel} onChange={(n) => setForm({ ...form, length: String(n) })} />
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <View style={styles.pair}>
+                      <TimeField flex theme={theme} label={t('schedule.from')} value={form.from}
+                        onChange={(v) => setForm({ ...form, from: v })} />
+                      <TimeField flex theme={theme} label={t('schedule.to')} value={form.to}
+                        onChange={(v) => setForm({ ...form, to: v })} />
+                    </View>
+                    <OptionField flex theme={theme} label={t('schedule.length')} value={Number(form.length)} options={SESSION_LENGTHS}
+                        format={lengthLabel} onChange={(n) => setForm({ ...form, length: String(n) })} />
+                  </>
+                )}
+
+                <View style={styles.pair}>
+                  <OptionField flex theme={theme} label={t('schedule.attendants')} value={Number(form.capacity)}
+                    options={range1(MAX_ATTENDANTS)} format={(n) => String(n)}
+                    onChange={(n) => setForm({ ...form, capacity: String(n) })} />
+                  {paid ? labelled(t('schedule.price'), input(form.price, (v) => setForm({ ...form, price: v }), { numeric: true, placeholder: '30' })) : <View style={{ flex: 1 }} />}
+                </View>
+                {!paid ? <Muted theme={theme}>{t('schedule.priceNone')}</Muted> : null}
+
+                <Text style={[styles.label, { color: theme.text }]}>{t('schedule.repeat')}</Text>
+                <Choice theme={theme} title={t('schedule.everyWeek')} selected={form.repeat === 'always'}
+                  onPress={() => setForm({ ...form, repeat: 'always' })} />
+                <Choice theme={theme} title={t('schedule.forWeeks')} selected={form.repeat === 'weeks'}
+                  onPress={() => setForm({ ...form, repeat: 'weeks' })} />
+                {form.repeat === 'weeks' ? (
+                  <View style={styles.half}>
+                    <OptionField theme={theme} label={t('schedule.weeks')} value={Number(form.weeks)}
+                      options={range1(MAX_WEEKS)} format={(n) => (n === 1 ? t('schedule.week1') : t('schedule.weeksN', { n }))}
+                      onChange={(n) => setForm({ ...form, weeks: String(n) })} />
+                  </View>
+                ) : null}
+                <DateField theme={theme} label={t('schedule.startsOn')} value={form.startsOn}
+                  minimum={form.id && form.startsOn < today(tz) ? form.startsOn : today(tz)}
+                  onChange={(v) => setForm({ ...form, startsOn: v })} />
+
+                <View style={styles.pair}>
+                  <View style={{ flex: 1 }}><Button theme={theme} kind="secondary" label={t('common.cancel')} onPress={() => { setForm(null); setError(null); }} /></View>
+                  <View style={{ flex: 1 }}><Button theme={theme} label={t('common.save')} onPress={saveForm} /></View>
+                </View>
+              </View>
+            ) : (
+              <Button theme={theme} label={t('schedule.addEntry')} onPress={() => setForm(emptyForm('open'))} />
+            )}
+            <Muted theme={theme}>{t('schedule.timezone', { tz })}</Muted>
+          </>
+        ) : null}
+
+        {tab === 'off' ? (
+          <>
+            <Text style={[styles.formTitle, { color: theme.text }]}>{t('schedule.wholeDays')}</Text>
+            {!daysOff.length ? <Muted theme={theme}>{t('schedule.noDaysOff')}</Muted> : null}
+            {daysOff.map((d) => (
+              <View key={d.id} style={[styles.entry, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                <Text style={[styles.entryDay, { color: theme.text, flex: 1 }]}>{dayLabel(d.day, language)}</Text>
+                <Pressable onPress={async () => { await run(() => deleteDayOff(d.id)); if (blockDay === d.day) showDay(d.day); }}
+                  hitSlop={10} accessibilityRole="button"
+                  accessibilityLabel={t('common.delete')}>
+                  <Ionicons name="trash-outline" size={22} color="#B3261E" />
+                </Pressable>
+              </View>
+            ))}
+            <DateField theme={theme} label={t('schedule.addDayOff')} value={newDay} minimum={today(tz)} onChange={setNewDay} />
+            <Button theme={theme} kind="secondary" label={t('schedule.addDayOff')} onPress={addOff} disabled={!newDay.trim()} />
+
+            <Text style={[styles.formTitle, { color: theme.text, marginTop: 12 }]}>{t('schedule.blockTimes')}</Text>
+            <Muted theme={theme}>{t('schedule.blockHint')}</Muted>
+            <DateField theme={theme} label={t('schedule.date')} value={blockDay} minimum={today(tz)}
+              onChange={(v) => { setBlockDay(v); showDay(v); }} />
+            {blockDay && daysOff.some((x) => x.day === blockDay)
+              ? <Message kind="info" text={t('schedule.dayIsOff')} />
+              : blockList && !blockList.length ? <Muted theme={theme}>{t('schedule.noSessionsDay')}</Muted> : null}
+            {blockList && blockList.length > 0 && !daysOff.some((x) => x.day === blockDay) ? (
+              <View style={styles.slots}>
+                {blockList.map((s) => (
+                  <Pressable key={s.starts_at} onPress={() => toggleBlock(s)} accessibilityRole="switch"
+                    accessibilityState={{ checked: s.blocked }}
+                    style={[styles.slot, {
+                      borderColor: s.blocked ? '#B3261E' : theme.primary,
+                      backgroundColor: s.blocked ? '#FDECEA' : 'transparent',
+                    }]}>
+                    <Text style={{ fontSize: 16, fontWeight: '700', color: s.blocked ? '#8C1D18' : theme.primary }}>
+                      {clock(s.starts_at, tz, language)}–{clock(s.ends_at, tz, language)}
+                    </Text>
+                    {s.title ? <Text style={{ fontSize: 12, color: theme.muted }} numberOfLines={1}>{s.title}</Text> : null}
+                    <Text style={{ fontSize: 12, color: s.blocked ? '#8C1D18' : theme.muted }}>
+                      {s.blocked ? t('schedule.blocked') : s.booked ? t('schedule.booked', { n: s.booked }) : t('schedule.free')}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
+          </>
+        ) : null}
+      </KeyboardScroll>
+    </ScreenBackground>
   );
 }
 

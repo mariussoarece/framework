@@ -44,8 +44,12 @@ export function DragList<T>({ items, keyOf, renderRow, onReorder, onDragging, th
     const existing = responders.get(index);
     if (existing) return existing;
     const created = PanResponder.create({
+      // claim the touch immediately (and before any parent) so nothing else takes the gesture
       onStartShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponderCapture: () => true,
       onMoveShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponderCapture: () => true,
+      onShouldBlockNativeResponder: () => true,
       onPanResponderTerminationRequest: () => false,
       onPanResponderGrant: () => {
         live.current = { from: index, hover: index };
@@ -108,5 +112,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6, paddingRight: 12,
     shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, shadowOpacity: 0,
   },
-  handle: { width: 52, height: '100%', alignItems: 'center', justifyContent: 'center' },
+  handle: { width: 64, height: '100%', alignItems: 'center', justifyContent: 'center' },
 });

@@ -1,4 +1,5 @@
 // Main -> Sections. Clients pick a section; the owner also adds, edits and reorders sections.
+import { ScreenBackground } from '../src/components/ScreenBackground';
 import React, { useCallback, useState } from 'react';
 import { KeyboardScroll } from '../src/components/KeyboardScroll';
 import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
@@ -57,83 +58,85 @@ export default function Workouts() {
   }
 
   return (
-    <KeyboardScroll
-      scrollEnabled={!dragging}
-      contentInsetAdjustmentBehavior="automatic"
-      style={{ flex: 1, backgroundColor: theme.background }}
-      contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing}
-        onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
-    >
-      <Message text={error} />
+    <ScreenBackground theme={theme}>
+      <KeyboardScroll
+        scrollEnabled={!reordering && !dragging}
+        contentInsetAdjustmentBehavior="automatic"
+        style={{ flex: 1, backgroundColor: 'transparent' }}
+        contentContainerStyle={styles.content}
+        refreshControl={reordering ? undefined : <RefreshControl refreshing={refreshing}
+          onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
+      >
+        <Message text={error} />
 
-      {isOwner ? (
-        <Pressable onPress={() => router.push('/section-edit')} accessibilityRole="button"
-          style={({ pressed }) => [styles.add, { borderColor: theme.primary, opacity: pressed ? 0.7 : 1 }]}>
-          <Ionicons name="add-circle" size={30} color={theme.primary} />
-          <Text style={[styles.addText, { color: theme.primary }]}>{t('sections.add')}</Text>
-        </Pressable>
-      ) : null}
-
-      {sections && !sections.length ? <Muted theme={theme}>{t('sections.empty')}</Muted> : null}
-
-      {isOwner && sections && sections.length > 1 ? (
-        <Pressable onPress={() => setReordering(!reordering)} accessibilityRole="button"
-          style={[styles.reorderBtn, { borderColor: theme.border, backgroundColor: reordering ? theme.primary : theme.surface }]}>
-          <Ionicons name={reordering ? 'checkmark' : 'swap-vertical'} size={20} color={reordering ? theme.onPrimary : theme.text} />
-          <Text style={{ fontSize: 15, fontWeight: '700', color: reordering ? theme.onPrimary : theme.text }}>
-            {reordering ? t('common.done') : t('sections.reorder')}
-          </Text>
-        </Pressable>
-      ) : null}
-
-      {reordering && sections ? (
-        <>
-          <Muted theme={theme}>{t('sections.reorderHint')}</Muted>
-          <DragList
-            items={sections}
-            keyOf={(x) => x.id}
-            theme={theme}
-            moveUpLabel={t('sections.moveUp')}
-            moveDownLabel={t('sections.moveDown')}
-            onDragging={setDragging}
-            onReorder={reorder}
-            renderRow={(x) => (
-              <View style={styles.dragRow}>
-                {x.cover_media_id
-                  ? <MediaImage mediaId={x.cover_media_id} style={styles.dragCover} />
-                  : <View style={[styles.dragCover, { backgroundColor: theme.primary, opacity: 0.25 }]} />}
-                <Text style={[styles.dragName, { color: theme.text }]} numberOfLines={1}>{x.name}</Text>
-              </View>
-            )}
-          />
-        </>
-      ) : null}
-
-      {!reordering ? (sections ?? []).map((s) => (
-        <View key={s.id} style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Pressable style={styles.cardMain} accessibilityRole="button" accessibilityLabel={s.name}
-            onPress={() => router.push({ pathname: '/section/[id]', params: { id: s.id } })}>
-            {s.cover_media_id
-              ? <MediaImage mediaId={s.cover_media_id} refreshKey={mediaKey} style={styles.cover} />
-              : <View style={[styles.cover, { backgroundColor: theme.primary, opacity: 0.25 }]} />}
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text style={[styles.name, { color: theme.text }]} numberOfLines={2}>{s.name}</Text>
-              <Text style={{ color: theme.muted, fontSize: 14 }}>{workoutCount(language, counts[s.id] ?? 0)}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={22} color={theme.muted} />
+        {isOwner ? (
+          <Pressable onPress={() => router.push('/section-edit')} accessibilityRole="button"
+            style={({ pressed }) => [styles.add, { borderColor: theme.primary, opacity: pressed ? 0.7 : 1 }]}>
+            <Ionicons name="add-circle" size={30} color={theme.primary} />
+            <Text style={[styles.addText, { color: theme.primary }]}>{t('sections.add')}</Text>
           </Pressable>
-          {isOwner ? (
-            <View style={styles.tools}>
-              <Pressable onPress={() => router.push({ pathname: '/section-edit', params: { id: s.id } })} hitSlop={8}
-                accessibilityRole="button" accessibilityLabel={t('sections.edit')}>
-                <Ionicons name="create-outline" size={22} color={theme.text} />
-              </Pressable>
-            </View>
-          ) : null}
-        </View>
-      )) : null}
-    </KeyboardScroll>
+        ) : null}
+
+        {sections && !sections.length ? <Muted theme={theme}>{t('sections.empty')}</Muted> : null}
+
+        {isOwner && sections && sections.length > 1 ? (
+          <Pressable onPress={() => setReordering(!reordering)} accessibilityRole="button"
+            style={[styles.reorderBtn, { borderColor: theme.border, backgroundColor: reordering ? theme.primary : theme.surface }]}>
+            <Ionicons name={reordering ? 'checkmark' : 'swap-vertical'} size={20} color={reordering ? theme.onPrimary : theme.text} />
+            <Text style={{ fontSize: 15, fontWeight: '700', color: reordering ? theme.onPrimary : theme.text }}>
+              {reordering ? t('common.done') : t('sections.reorder')}
+            </Text>
+          </Pressable>
+        ) : null}
+
+        {reordering && sections ? (
+          <>
+            <Muted theme={theme}>{t('sections.reorderHint')}</Muted>
+            <DragList
+              items={sections}
+              keyOf={(x) => x.id}
+              theme={theme}
+              moveUpLabel={t('sections.moveUp')}
+              moveDownLabel={t('sections.moveDown')}
+              onDragging={setDragging}
+              onReorder={reorder}
+              renderRow={(x) => (
+                <View style={styles.dragRow}>
+                  {x.cover_media_id
+                    ? <MediaImage mediaId={x.cover_media_id} style={styles.dragCover} />
+                    : <View style={[styles.dragCover, { backgroundColor: theme.primary, opacity: 0.25 }]} />}
+                  <Text style={[styles.dragName, { color: theme.text }]} numberOfLines={1}>{x.name}</Text>
+                </View>
+              )}
+            />
+          </>
+        ) : null}
+
+        {!reordering ? (sections ?? []).map((s) => (
+          <View key={s.id} style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Pressable style={styles.cardMain} accessibilityRole="button" accessibilityLabel={s.name}
+              onPress={() => router.push({ pathname: '/section/[id]', params: { id: s.id } })}>
+              {s.cover_media_id
+                ? <MediaImage mediaId={s.cover_media_id} refreshKey={mediaKey} style={styles.cover} />
+                : <View style={[styles.cover, { backgroundColor: theme.primary, opacity: 0.25 }]} />}
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={[styles.name, { color: theme.text }]} numberOfLines={2}>{s.name}</Text>
+                <Text style={{ color: theme.muted, fontSize: 14 }}>{workoutCount(language, counts[s.id] ?? 0)}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={22} color={theme.muted} />
+            </Pressable>
+            {isOwner ? (
+              <View style={styles.tools}>
+                <Pressable onPress={() => router.push({ pathname: '/section-edit', params: { id: s.id } })} hitSlop={8}
+                  accessibilityRole="button" accessibilityLabel={t('sections.edit')}>
+                  <Ionicons name="create-outline" size={22} color={theme.text} />
+                </Pressable>
+              </View>
+            ) : null}
+          </View>
+        )) : null}
+      </KeyboardScroll>
+    </ScreenBackground>
   );
 }
 

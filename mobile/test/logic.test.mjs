@@ -14,7 +14,7 @@ const ts = require(process.env.TS_PATH || 'typescript');
 
 // Compile the .ts modules we test into a temp folder as .mjs files.
 const out = mkdtempSync(join(tmpdir(), 'mobile-logic-'));
-for (const rel of ['src/i18n/en.ts', 'src/i18n/ro.ts', 'src/i18n/translate.ts', 'src/lib/richtext.ts', 'src/lib/format.ts', 'src/lib/video.ts', 'src/lib/schedule.ts', 'src/lib/pickerValues.ts', 'src/lib/reorder.ts', 'src/lib/mediaCache.ts']) {
+for (const rel of ['src/i18n/en.ts', 'src/i18n/ro.ts', 'src/i18n/translate.ts', 'src/lib/richtext.ts', 'src/lib/format.ts', 'src/lib/video.ts', 'src/lib/schedule.ts', 'src/lib/pickerValues.ts', 'src/lib/reorder.ts', 'src/lib/mediaCache.ts', 'src/theme/themes.ts']) {
   const src = readFileSync(join(here, '..', rel), 'utf8');
   const js = ts.transpileModule(src, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } })
     .outputText.replace(/from '(\.\.?\/[^']+)'/g, (_, p) => `from './${p.split('/').pop()}.mjs'`);
@@ -32,6 +32,7 @@ const sch = await load('schedule.mjs');
 const pv = await load('pickerValues.mjs');
 const ro2 = await load('reorder.mjs');
 const mc = await load('mediaCache.mjs');
+const th = await load('themes.mjs');
 
 test('Romanian has exactly the English keys, none empty', () => {
   assert.deepEqual(Object.keys(ro).sort(), Object.keys(en).sort());
@@ -259,4 +260,11 @@ test('picture links: approved ones are reused, waiting ones are asked again', ()
   assert.equal(mc.cacheUsable({ status: 'published', image: { expires: Math.floor(now / 1000) + 300 } }, now), false, 'about to expire');
   assert.equal(mc.cacheUsable({ status: 'published' }, now), false, 'published but no link');
   assert.equal(mc.cacheUsable(undefined, now), false);
+});
+
+test('theme veil color and dark-theme detection', () => {
+  assert.equal(th.withAlpha('#F4F1EA', 0.55), 'rgba(244,241,234,0.55)');
+  assert.equal(th.isDarkTheme(th.themeFor('dojo')), true);
+  assert.equal(th.isDarkTheme(th.themeFor('forest')), true);
+  assert.equal(th.isDarkTheme(th.themeFor('calm')), false);
 });

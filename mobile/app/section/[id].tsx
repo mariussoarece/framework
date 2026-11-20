@@ -1,4 +1,5 @@
 // Main -> Section -> list of workouts. The owner sees the big "+ Add workout".
+import { ScreenBackground } from '../../src/components/ScreenBackground';
 import React, { useCallback, useState } from 'react';
 import { KeyboardScroll } from '../../src/components/KeyboardScroll';
 import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
@@ -61,81 +62,83 @@ export default function SectionScreen() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   return (
-    <KeyboardScroll
-      scrollEnabled={!reordering && !dragging}
-      contentInsetAdjustmentBehavior="automatic"
-      style={{ flex: 1, backgroundColor: theme.background }}
-      contentContainerStyle={styles.content}
-      refreshControl={reordering ? undefined : <RefreshControl refreshing={refreshing}
-        onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
-    >
-      <Message text={error} />
+    <ScreenBackground theme={theme}>
+      <KeyboardScroll
+        scrollEnabled={!reordering && !dragging}
+        contentInsetAdjustmentBehavior="automatic"
+        style={{ flex: 1, backgroundColor: 'transparent' }}
+        contentContainerStyle={styles.content}
+        refreshControl={reordering ? undefined : <RefreshControl refreshing={refreshing}
+          onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
+      >
+        <Message text={error} />
 
-      {isOwner ? (
-        <Pressable onPress={() => router.push({ pathname: '/workout-edit', params: { section: id } })}
-          accessibilityRole="button" accessibilityLabel={t('workouts.add')}
-          style={({ pressed }) => [styles.add, { borderColor: theme.primary, opacity: pressed ? 0.7 : 1 }]}>
-          <Ionicons name="add" size={44} color={theme.primary} />
-          <Text style={[styles.addText, { color: theme.primary }]}>{t('workouts.add')}</Text>
-        </Pressable>
-      ) : null}
+        {isOwner ? (
+          <Pressable onPress={() => router.push({ pathname: '/workout-edit', params: { section: id } })}
+            accessibilityRole="button" accessibilityLabel={t('workouts.add')}
+            style={({ pressed }) => [styles.add, { borderColor: theme.primary, opacity: pressed ? 0.7 : 1 }]}>
+            <Ionicons name="add" size={44} color={theme.primary} />
+            <Text style={[styles.addText, { color: theme.primary }]}>{t('workouts.add')}</Text>
+          </Pressable>
+        ) : null}
 
-      {rows && !rows.length ? <Muted theme={theme}>{t('workouts.empty')}</Muted> : null}
+        {rows && !rows.length ? <Muted theme={theme}>{t('workouts.empty')}</Muted> : null}
 
-      {isOwner && rows && rows.length > 1 ? (
-        <Pressable onPress={() => setReordering(!reordering)} accessibilityRole="button"
-          style={[styles.reorderBtn, { borderColor: theme.border, backgroundColor: reordering ? theme.primary : theme.surface }]}>
-          <Ionicons name={reordering ? 'checkmark' : 'swap-vertical'} size={20} color={reordering ? theme.onPrimary : theme.text} />
-          <Text style={{ fontSize: 15, fontWeight: '700', color: reordering ? theme.onPrimary : theme.text }}>
-            {reordering ? t('common.done') : t('sections.reorder')}
-          </Text>
-        </Pressable>
-      ) : null}
-
-      {reordering && rows ? (
-        <>
-          <Muted theme={theme}>{t('workouts.reorderHint')}</Muted>
-          <DragList
-            items={rows}
-            keyOf={(x) => x.id}
-            theme={theme}
-            moveUpLabel={t('sections.moveUp')}
-            moveDownLabel={t('sections.moveDown')}
-            onDragging={setDragging}
-            onReorder={reorder}
-            renderRow={(x) => (
-              <View style={styles.dragRow}>
-                {x.thumbId
-                  ? <MediaImage mediaId={x.thumbId} style={styles.dragThumb} />
-                  : <View style={[styles.dragThumb, styles.noThumb, { borderColor: theme.border }]}>
-                      <Ionicons name="body-outline" size={20} color={theme.muted} />
-                    </View>}
-                <Text style={[styles.name, { color: theme.text, flex: 1 }]} numberOfLines={1}>{x.name}</Text>
-              </View>
-            )}
-          />
-        </>
-      ) : null}
-
-      {!reordering ? (rows ?? []).map((w) => (
-        <Pressable key={w.id} accessibilityRole="button" accessibilityLabel={w.name}
-          onPress={() => router.push({ pathname: '/workout/[id]', params: { id: w.id } })}
-          style={({ pressed }) => [styles.card, { backgroundColor: theme.surface, borderColor: theme.border, opacity: pressed ? 0.85 : 1 }]}>
-          {w.thumbId
-            ? <MediaImage mediaId={w.thumbId} refreshKey={mediaKey} style={styles.thumb} />
-            : <View style={[styles.thumb, styles.noThumb, { borderColor: theme.border }]}>
-                <Ionicons name="body-outline" size={28} color={theme.muted} />
-              </View>}
-          <View style={{ flex: 1, gap: 4 }}>
-            <Text style={[styles.name, { color: theme.text }]} numberOfLines={2}>{w.name}</Text>
-            <Text style={{ color: theme.muted, fontSize: 15 }}>
-              {[workoutSummary(language, w), restText(language, w)].filter(Boolean).join(' · ')}
+        {isOwner && rows && rows.length > 1 ? (
+          <Pressable onPress={() => setReordering(!reordering)} accessibilityRole="button"
+            style={[styles.reorderBtn, { borderColor: theme.border, backgroundColor: reordering ? theme.primary : theme.surface }]}>
+            <Ionicons name={reordering ? 'checkmark' : 'swap-vertical'} size={20} color={reordering ? theme.onPrimary : theme.text} />
+            <Text style={{ fontSize: 15, fontWeight: '700', color: reordering ? theme.onPrimary : theme.text }}>
+              {reordering ? t('common.done') : t('sections.reorder')}
             </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={22} color={theme.muted} />
-        </Pressable>
-      )) : null}
-    </KeyboardScroll>
+          </Pressable>
+        ) : null}
+
+        {reordering && rows ? (
+          <>
+            <Muted theme={theme}>{t('workouts.reorderHint')}</Muted>
+            <DragList
+              items={rows}
+              keyOf={(x) => x.id}
+              theme={theme}
+              moveUpLabel={t('sections.moveUp')}
+              moveDownLabel={t('sections.moveDown')}
+              onDragging={setDragging}
+              onReorder={reorder}
+              renderRow={(x) => (
+                <View style={styles.dragRow}>
+                  {x.thumbId
+                    ? <MediaImage mediaId={x.thumbId} style={styles.dragThumb} />
+                    : <View style={[styles.dragThumb, styles.noThumb, { borderColor: theme.border }]}>
+                        <Ionicons name="body-outline" size={20} color={theme.muted} />
+                      </View>}
+                  <Text style={[styles.name, { color: theme.text, flex: 1 }]} numberOfLines={1}>{x.name}</Text>
+                </View>
+              )}
+            />
+          </>
+        ) : null}
+
+        {!reordering ? (rows ?? []).map((w) => (
+          <Pressable key={w.id} accessibilityRole="button" accessibilityLabel={w.name}
+            onPress={() => router.push({ pathname: '/workout/[id]', params: { id: w.id } })}
+            style={({ pressed }) => [styles.card, { backgroundColor: theme.surface, borderColor: theme.border, opacity: pressed ? 0.85 : 1 }]}>
+            {w.thumbId
+              ? <MediaImage mediaId={w.thumbId} refreshKey={mediaKey} style={styles.thumb} />
+              : <View style={[styles.thumb, styles.noThumb, { borderColor: theme.border }]}>
+                  <Ionicons name="body-outline" size={28} color={theme.muted} />
+                </View>}
+            <View style={{ flex: 1, gap: 4 }}>
+              <Text style={[styles.name, { color: theme.text }]} numberOfLines={2}>{w.name}</Text>
+              <Text style={{ color: theme.muted, fontSize: 15 }}>
+                {[workoutSummary(language, w), restText(language, w)].filter(Boolean).join(' · ')}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color={theme.muted} />
+          </Pressable>
+        )) : null}
+      </KeyboardScroll>
+    </ScreenBackground>
   );
 }
 

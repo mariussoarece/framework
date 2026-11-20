@@ -1,5 +1,6 @@
 // A workout: pictures/videos on top, then sets, repetitions or time, rest, description,
 // warning and what to avoid. The owner gets an Edit button.
+import { ScreenBackground } from '../../src/components/ScreenBackground';
 import React, { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
@@ -55,39 +56,41 @@ export default function WorkoutScreen() {
   const rest = restText(language, w);
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ flex: 1, backgroundColor: theme.background }} contentContainerStyle={styles.content}>
-      <MediaGallery ids={visible} quality={profile?.video_quality ?? 'auto'} theme={theme} />
+    <ScreenBackground theme={theme}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ flex: 1, backgroundColor: 'transparent' }} contentContainerStyle={styles.content}>
+        <MediaGallery ids={visible} quality={profile?.video_quality ?? 'auto'} theme={theme} />
 
-      <Text style={[styles.title, { color: theme.text }]} accessibilityRole="header">{w.name}</Text>
+        <Text style={[styles.title, { color: theme.text }]} accessibilityRole="header">{w.name}</Text>
 
-      {summary || rest ? (
-        <View style={styles.chips}>
-          {summary ? <Chip icon="repeat" text={summary} color={theme.primary} /> : null}
-          {rest ? <Chip icon="pause-circle-outline" text={rest} color={theme.muted} /> : null}
-        </View>
-      ) : null}
+        {summary || rest ? (
+          <View style={styles.chips}>
+            {summary ? <Chip icon="repeat" text={summary} color={theme.primary} /> : null}
+            {rest ? <Chip icon="pause-circle-outline" text={rest} color={theme.muted} /> : null}
+          </View>
+        ) : null}
 
-      {w.warning ? (
-        <Notice icon="warning-outline" title={t('workout.warningTitle')} text={w.warning} bg="#FFF4E5" fg="#7A4100" />
-      ) : null}
-      {w.avoid ? (
-        <Notice icon="hand-left-outline" title={t('workout.avoidTitle')} text={w.avoid} bg="#FDECEA" fg="#8C1D18" />
-      ) : null}
+        {w.warning ? (
+          <Notice icon="warning-outline" title={t('workout.warningTitle')} text={w.warning} bg="#FFF4E5" fg="#7A4100" />
+        ) : null}
+        {w.avoid ? (
+          <Notice icon="hand-left-outline" title={t('workout.avoidTitle')} text={w.avoid} bg="#FDECEA" fg="#8C1D18" />
+        ) : null}
 
-      {w.description ? (
-        <View style={[styles.card, { backgroundColor: theme.surface }]}>
-          <RichText doc={w.description} theme={theme} />
-        </View>
-      ) : null}
+        {w.description ? (
+          <View style={[styles.card, { backgroundColor: theme.surface }]}>
+            <RichText doc={w.description} theme={theme} />
+          </View>
+        ) : null}
 
-      {profile?.role === 'client' ? (
-        <Pressable onPress={() => router.push({ pathname: '/report', params: { workout: w.id, name: w.name } })}
-          accessibilityRole="button" style={styles.report} hitSlop={8}>
-          <Ionicons name="flag-outline" size={16} color={theme.muted} />
-          <Text style={{ color: theme.muted, fontSize: 14, textDecorationLine: 'underline' }}>{t('report.link')}</Text>
-        </Pressable>
-      ) : null}
-    </ScrollView>
+        {profile?.role === 'client' ? (
+          <Pressable onPress={() => router.push({ pathname: '/report', params: { workout: w.id, name: w.name } })}
+            accessibilityRole="button" style={styles.report} hitSlop={8}>
+            <Ionicons name="flag-outline" size={16} color={theme.muted} />
+            <Text style={{ color: theme.muted, fontSize: 14, textDecorationLine: 'underline' }}>{t('report.link')}</Text>
+          </Pressable>
+        ) : null}
+      </ScrollView>
+    </ScreenBackground>
   );
 }
 

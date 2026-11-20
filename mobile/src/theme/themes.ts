@@ -55,3 +55,11 @@ export function isDarkTheme(t: Theme): boolean {
   const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
   return 0.299 * r + 0.587 * g + 0.114 * b < 128;
 }
+
+// "#F4F1EA" + 0.6 -> "rgba(244,241,234,0.6)"
+export function withAlpha(hex: string, alpha: number): string {
+  const h = hex.replace('#', '');
+  if (h.length !== 6) return hex;
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+  return `rgba(${r},${g},${b},${alpha})`;
+}
