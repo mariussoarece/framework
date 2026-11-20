@@ -14,7 +14,7 @@ const ts = require(process.env.TS_PATH || 'typescript');
 
 // Compile the .ts modules we test into a temp folder as .mjs files.
 const out = mkdtempSync(join(tmpdir(), 'mobile-logic-'));
-for (const rel of ['src/i18n/en.ts', 'src/i18n/ro.ts', 'src/i18n/translate.ts', 'src/lib/richtext.ts', 'src/lib/format.ts', 'src/lib/video.ts', 'src/lib/schedule.ts']) {
+for (const rel of ['src/i18n/en.ts', 'src/i18n/ro.ts', 'src/i18n/translate.ts', 'src/lib/richtext.ts', 'src/lib/format.ts', 'src/lib/video.ts', 'src/lib/schedule.ts', 'src/lib/pickerValues.ts']) {
   const src = readFileSync(join(here, '..', rel), 'utf8');
   const js = ts.transpileModule(src, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } })
     .outputText.replace(/from '(\.\.?\/[^']+)'/g, (_, p) => `from './${p.split('/').pop()}.mjs'`);
@@ -28,6 +28,7 @@ const { toBlocks, plainText, safeHref, cssColor } = await load('richtext.mjs');
 const { workoutSummary, restText, duration, positiveInt } = await load('format.mjs');
 const { pickVideoUrl } = await load('video.mjs');
 const sch = await load('schedule.mjs');
+const pv = await load('pickerValues.mjs');
 
 test('Romanian has exactly the English keys, none empty', () => {
   assert.deepEqual(Object.keys(ro).sort(), Object.keys(en).sort());
@@ -184,4 +185,11 @@ test('book tab: one week at a time, never in the past', () => {
   assert.deepEqual(sch.bookableRange('2026-11-16', '2026-11-19'), { from: '2026-11-19', days: 4 }, 'Thursday to Sunday');
   assert.deepEqual(sch.bookableRange('2026-11-23', '2026-11-19'), { from: '2026-11-23', days: 7 }, 'next week: all 7 days');
   assert.deepEqual(sch.bookableRange('2026-11-16', '2026-11-22'), { from: '2026-11-22', days: 1 }, 'Sunday: just today');
+});
+
+test('pickers: dates and times round-trip without shifting', () => {
+  for (const k of ['2026-01-01', '2026-03-29', '2026-10-25', '2026-12-31']) {   // incl. daylight-saving days
+    assert.equal(pv.keyFromDate(pv.dateFromKey(k)), k);
+  }
+  for (const t of ['00:00', '09:05', '17:30', '23:55']) assert.equal(pv.hhmmFromTime(pv.timeFromHHMM(t)), t);
 });

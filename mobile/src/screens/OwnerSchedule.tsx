@@ -6,6 +6,7 @@ import { Alert, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } f
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Choice, Message, Muted, Tabs } from '../components/ui';
+import { DateField, TimeField } from '../components/pickers';
 import { BookingCard } from './BookingCard';
 import { WeekView } from './WeekView';
 import { useI18n } from '../i18n/I18nProvider';
@@ -162,8 +163,8 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
     await run(async () => { await addDayOff(org!.id, d); setNewDay(''); });
   }
 
-  async function showDay() {
-    const d = blockDay.trim();
+  async function showDay(chosen?: string) {
+    const d = (chosen ?? blockDay).trim();
     if (!isIsoDate(d) || d < today(tz)) return setError(t('schedule.dayInvalid'));
     setError(null);
     try { setBlockList(await daySlots(d)); } catch (err) { setError(tError(err)); }
@@ -302,15 +303,18 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
                   {labelled(t('schedule.className'), input(form.title, (v) => setForm({ ...form, title: v }), { placeholder: 'Yoga Flow' }))}
                   {labelled(t('schedule.instructor'), input(form.instructor, (v) => setForm({ ...form, instructor: v })))}
                   <View style={styles.pair}>
-                    {labelled(t('schedule.startTime'), input(form.from, (v) => setForm({ ...form, from: v })))}
+                    <TimeField flex theme={theme} label={t('schedule.startTime')} value={form.from}
+                      onChange={(v) => setForm({ ...form, from: v })} />
                     {labelled(t('schedule.classLength'), input(form.length, (v) => setForm({ ...form, length: v.replace(/[^0-9]/g, '') }), { numeric: true }))}
                   </View>
                 </>
               ) : (
                 <>
                   <View style={styles.pair}>
-                    {labelled(t('schedule.from'), input(form.from, (v) => setForm({ ...form, from: v })))}
-                    {labelled(t('schedule.to'), input(form.to, (v) => setForm({ ...form, to: v })))}
+                    <TimeField flex theme={theme} label={t('schedule.from')} value={form.from}
+                      onChange={(v) => setForm({ ...form, from: v })} />
+                    <TimeField flex theme={theme} label={t('schedule.to')} value={form.to}
+                      onChange={(v) => setForm({ ...form, to: v })} />
                   </View>
                   {labelled(t('schedule.length'), input(form.length, (v) => setForm({ ...form, length: v.replace(/[^0-9]/g, '') }), { numeric: true }))}
                 </>
@@ -328,7 +332,9 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
               <Choice theme={theme} title={t('schedule.forWeeks')} selected={form.repeat === 'weeks'}
                 onPress={() => setForm({ ...form, repeat: 'weeks' })} />
               <View style={styles.pair}>
-                {labelled(t('schedule.startsOn'), input(form.startsOn, (v) => setForm({ ...form, startsOn: v.trim() })))}
+                <DateField flex theme={theme} label={t('schedule.startsOn')} value={form.startsOn}
+                  minimum={form.id && form.startsOn < today(tz) ? form.startsOn : today(tz)}
+                  onChange={(v) => setForm({ ...form, startsOn: v })} />
                 {form.repeat === 'weeks'
                   ? labelled(t('schedule.weeks'), input(form.weeks, (v) => setForm({ ...form, weeks: v.replace(/[^0-9]/g, '') }), { numeric: true }))
                   : <View style={{ flex: 1 }} />}
@@ -359,17 +365,13 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
               </Pressable>
             </View>
           ))}
-          <View style={styles.pair}>
-            {labelled(t('schedule.addDayOff'), input(newDay, setNewDay, { placeholder: t('schedule.dayOffHint') }))}
-          </View>
+          <DateField theme={theme} label={t('schedule.addDayOff')} value={newDay} minimum={today(tz)} onChange={setNewDay} />
           <Button theme={theme} kind="secondary" label={t('schedule.addDayOff')} onPress={addOff} disabled={!newDay.trim()} />
 
           <Text style={[styles.formTitle, { color: theme.text, marginTop: 12 }]}>{t('schedule.blockTimes')}</Text>
           <Muted theme={theme}>{t('schedule.blockHint')}</Muted>
-          <View style={styles.pair}>
-            {labelled(t('schedule.startsOn'), input(blockDay, (v) => { setBlockDay(v); setBlockList(null); }, { placeholder: today(tz) }))}
-          </View>
-          <Button theme={theme} kind="secondary" label={t('schedule.showDay')} onPress={showDay} disabled={!blockDay.trim()} />
+          <DateField theme={theme} label={t('schedule.date')} value={blockDay} minimum={today(tz)}
+            onChange={(v) => { setBlockDay(v); showDay(v); }} />
           {blockList && !blockList.length ? <Muted theme={theme}>{t('schedule.noSessionsDay')}</Muted> : null}
           {blockList && blockList.length ? (
             <View style={styles.slots}>
