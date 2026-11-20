@@ -19,6 +19,8 @@ export default function Home() {
   const isOwner = profile?.role === 'owner';
   const [refreshing, setRefreshing] = React.useState(false);
   const [mediaKey, setMediaKey] = React.useState(0);     // bump to fetch the images again
+  // the front picture's width/height, so the box fits it exactly and the rounded corners are the picture's own
+  const [frontRatio, setFrontRatio] = React.useState(16 / 9);
   useFocusEffect(React.useCallback(() => { setMediaKey((k) => k + 1); }, []));
   const theme = themeFor(home?.theme_key);
 
@@ -68,7 +70,9 @@ export default function Home() {
           {paused ? <Message text={t('home.paused')} /> : null}
 
           {home?.foreground_media_id ? (
-            <MediaImage mediaId={home.foreground_media_id} refreshKey={mediaKey} contentFit="contain" style={styles.foreground}
+            <MediaImage mediaId={home.foreground_media_id} refreshKey={mediaKey} contentFit="cover"
+              style={[styles.foreground, { aspectRatio: frontRatio }]}
+              onSize={(w, h) => { if (w > 0 && h > 0) setFrontRatio(frontAspect(w, h)); }}
               label={org.name} />
           ) : null}
 
@@ -99,7 +103,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   orgName: { flex: 1, fontSize: 30, fontWeight: '800' },
   gear: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
-  foreground: { width: '100%', height: 220, borderRadius: 16 },
+  foreground: { width: '100%', borderRadius: 16, overflow: 'hidden' },
   card: { borderRadius: 16, padding: 18 },
   buttons: { gap: 14, marginTop: 4 },
   bigButton: {
@@ -107,3 +111,8 @@ const styles = StyleSheet.create({
   },
   bigButtonText: { flex: 1, color: '#FFFFFF', fontSize: 20, fontWeight: '700' },
 });
+
+// Very tall pictures are trimmed a little (to 4:5) so they don't push everything off the screen.
+function frontAspect(width: number, height: number): number {
+  return Math.max(width / height, 0.8);
+}

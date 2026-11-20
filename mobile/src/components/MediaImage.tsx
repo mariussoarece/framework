@@ -19,12 +19,13 @@ export function useMediaUrl(mediaId: string | null | undefined, refreshKey = 0):
   return url;
 }
 
-export function MediaImage({ mediaId, style, contentFit = 'cover', label, refreshKey }: {
+export function MediaImage({ mediaId, style, contentFit = 'cover', label, refreshKey, onSize }: {
   mediaId: string | null | undefined;
   refreshKey?: number;
   style?: StyleProp<ImageStyle>;
   contentFit?: ImageContentFit;
   label?: string;
+  onSize?: (width: number, height: number) => void;   // the picture's own size, once loaded
 }) {
   const url = useMediaUrl(mediaId, refreshKey);
   if (!url) return null;
@@ -36,6 +37,7 @@ export function MediaImage({ mediaId, style, contentFit = 'cover', label, refres
       contentFit={contentFit}
       transition={200}
       accessibilityLabel={label}
+      onLoad={onSize ? (e) => onSize(e.source.width, e.source.height) : undefined}
     />
   );
 }
