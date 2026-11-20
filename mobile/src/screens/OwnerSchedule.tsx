@@ -46,7 +46,7 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
   const { org } = useSession();
   const tz = org?.timezone ?? 'Europe/Bucharest';
   const paid = org?.plan !== 'none';
-  const [tab, setTab] = useState<Tab>('requests');
+  const [tab, setTab] = useState<Tab>('hours');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [entries, setEntries] = useState<Availability[]>([]);
   const [daysOff, setDaysOff] = useState<DayOff[]>([]);
@@ -104,7 +104,7 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
       if (!to || minutesOf(to) <= minutesOf(from)) return setError(t('schedule.hoursInvalid'));
       if (minutesOf(from) + length > minutesOf(to)) return setError(t('schedule.lengthInvalid'));
     } else if (!addMinutes(from, length)) {
-      return setError(t('schedule.lengthInvalid'));
+      return setError(t('schedule.classPastMidnight'));
     }
     const capacity = positiveInt(form.capacity);
     if (!capacity || capacity > MAX_ATTENDANTS) return setError(t('workout.invalidNumbers'));
@@ -211,11 +211,11 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
           setRefreshing(false);
         }} />}
     >
-      <Tabs theme={theme} value={tab} onChange={(k) => { setTab(k); setError(null); }} tabs={[
+      <Tabs compact theme={theme} value={tab} onChange={(k) => { setTab(k); setError(null); }} tabs={[
+        { key: 'hours', label: t('schedule.timetable') },
+        { key: 'week', label: t('schedule.week') },
         { key: 'requests', label: t('schedule.requests'), badge: requests.length },
         { key: 'upcoming', label: t('schedule.upcoming') },
-        { key: 'week', label: t('schedule.week') },
-        { key: 'hours', label: t('schedule.timetable') },
         { key: 'off', label: t('schedule.timeOff') },
       ]} />
       <Message text={error} />
@@ -341,16 +341,16 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
                 onPress={() => setForm({ ...form, repeat: 'always' })} />
               <Choice theme={theme} title={t('schedule.forWeeks')} selected={form.repeat === 'weeks'}
                 onPress={() => setForm({ ...form, repeat: 'weeks' })} />
-              <View style={styles.pair}>
-                <DateField flex theme={theme} label={t('schedule.startsOn')} value={form.startsOn}
-                  minimum={form.id && form.startsOn < today(tz) ? form.startsOn : today(tz)}
-                  onChange={(v) => setForm({ ...form, startsOn: v })} />
-                {form.repeat === 'weeks'
-                  ? <OptionField flex theme={theme} label={t('schedule.weeks')} value={Number(form.weeks)}
-                      options={range1(MAX_WEEKS)} format={(n) => (n === 1 ? t('schedule.week1') : t('schedule.weeksN', { n }))}
-                      onChange={(n) => setForm({ ...form, weeks: String(n) })} />
-                  : <View style={{ flex: 1 }} />}
-              </View>
+              {form.repeat === 'weeks' ? (
+                <View style={styles.half}>
+                  <OptionField theme={theme} label={t('schedule.weeks')} value={Number(form.weeks)}
+                    options={range1(MAX_WEEKS)} format={(n) => (n === 1 ? t('schedule.week1') : t('schedule.weeksN', { n }))}
+                    onChange={(n) => setForm({ ...form, weeks: String(n) })} />
+                </View>
+              ) : null}
+              <DateField theme={theme} label={t('schedule.startsOn')} value={form.startsOn}
+                minimum={form.id && form.startsOn < today(tz) ? form.startsOn : today(tz)}
+                onChange={(v) => setForm({ ...form, startsOn: v })} />
 
               <View style={styles.pair}>
                 <View style={{ flex: 1 }}><Button theme={theme} kind="secondary" label={t('common.cancel')} onPress={() => { setForm(null); setError(null); }} /></View>
@@ -424,6 +424,7 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { borderWidth: 1.5, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10, minWidth: 52, alignItems: 'center' },
   pair: { flexDirection: 'row', gap: 10 },
+  half: { width: '50%' },
   input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },
   slots: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   slot: { borderWidth: 1.5, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12, alignItems: 'center', minWidth: 120 },

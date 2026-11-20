@@ -212,3 +212,9 @@ test('session lengths up to 10 hours, default 60', () => {
   assert.equal(sch.lengthLabel(90), '90 min (1 h 30)');
   assert.equal(sch.lengthLabel(600), '600 min (10 h)');
 });
+
+test('database limits show a helpful message, not "something went wrong"', () => {
+  const err = { message: 'new row for relation "availability" violates check constraint "availability_slot_minutes_check"' };
+  assert.equal(errorText('en', err), en['schedule.lengthInvalid']);
+  assert.match(errorText('en', err), /600/);
+});

@@ -53,6 +53,8 @@ export function errorText(language: Language, err: unknown): string {
     slot_has_bookings: 'error.slot_has_bookings',
     content_reports_one_open_uq: 'error.already_reported',
     day_off: 'error.day_off',
+    availability_slot_minutes_check: 'schedule.lengthInvalid',
+    availability_capacity_check: 'workout.invalidNumbers',
     slot_not_found: 'error.slot_not_found',
     booking_not_active: 'error.booking_changed',
     'invalid login credentials': 'error.invalid_credentials',

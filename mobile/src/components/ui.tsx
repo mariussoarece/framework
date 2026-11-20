@@ -133,16 +133,19 @@ const styles = StyleSheet.create({
 });
 
 // Row of tabs (segmented control).
-export function Tabs<K extends string>({ tabs, value, onChange, theme = DEFAULT_THEME }: {
-  tabs: { key: K; label: string; badge?: number }[]; value: K; onChange: (k: K) => void; theme?: Theme;
+// compact: every tab fits on one row (smaller text), no sideways scrolling.
+export function Tabs<K extends string>({ tabs, value, onChange, theme = DEFAULT_THEME, compact = false }: {
+  tabs: { key: K; label: string; badge?: number }[]; value: K; onChange: (k: K) => void; theme?: Theme; compact?: boolean;
 }) {
-  const many = tabs.length > 3;   // more than 3: scroll sideways instead of squeezing
+  const many = tabs.length > 3 && !compact;   // more than 3 and not compact: scroll sideways
   const items = tabs.map((tab) => {
     const on = tab.key === value;
     return (
       <Pressable key={tab.key} onPress={() => onChange(tab.key)} accessibilityRole="tab" accessibilityState={{ selected: on }}
-        style={[tabStyles.tab, many ? tabStyles.tabAuto : null, on ? { backgroundColor: theme.primary } : null]}>
-        <Text numberOfLines={1} style={[tabStyles.text, { color: on ? theme.onPrimary : theme.text }]}>
+        style={[tabStyles.tab, many ? tabStyles.tabAuto : null, compact ? tabStyles.tabCompact : null,
+          on ? { backgroundColor: theme.primary } : null]}>
+        <Text numberOfLines={1} adjustsFontSizeToFit={compact} minimumFontScale={0.75}
+          style={[tabStyles.text, compact ? tabStyles.textCompact : null, { color: on ? theme.onPrimary : theme.text }]}>
           {tab.label}{tab.badge ? ` (${tab.badge})` : ''}
         </Text>
       </Pressable>
@@ -163,5 +166,7 @@ const tabStyles = StyleSheet.create({
   row: { flexDirection: 'row', borderWidth: 1, borderRadius: 12, padding: 3, gap: 3, flexGrow: 0 },
   tab: { flex: 1, borderRadius: 9, paddingVertical: 10, paddingHorizontal: 4, alignItems: 'center' },
   tabAuto: { flex: 0, paddingHorizontal: 14 },
+  tabCompact: { paddingHorizontal: 2, paddingVertical: 9 },
+  textCompact: { fontSize: 12.5 },
   text: { fontSize: 14, fontWeight: '700' },
 });
