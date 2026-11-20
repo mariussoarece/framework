@@ -185,7 +185,7 @@ export const ro: Record<TextKey, string> = {
   'schedule.noDaysOff': "Nicio zi liberă planificată.",
   'schedule.timezone': "Orele sunt în fusul {tz}.",
   'schedule.client': "Client",
-  'schedule.week': "Săptămânal",
+  'schedule.week': "Calendar",
   'schedule.timeOff': "Concediu",
   'schedule.wholeDays': "Zile libere întregi",
   'schedule.typeOpen': "Program deschis",
