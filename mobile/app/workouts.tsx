@@ -11,6 +11,7 @@ import { useI18n } from '../src/i18n/I18nProvider';
 import { listSections, saveSectionOrder, sectionWorkoutCounts, type Section } from '../src/lib/data';
 import { workoutCount } from '../src/lib/format';
 import { DragList } from '../src/components/DragList';
+import { AddButton } from '../src/components/AddButton';
 import { useSession } from '../src/lib/session';
 import { themeFor } from '../src/theme/themes';
 
@@ -70,11 +71,7 @@ export default function Workouts() {
         <Message text={error} />
 
         {isOwner ? (
-          <Pressable onPress={() => router.push('/section-edit')} accessibilityRole="button"
-            style={({ pressed }) => [styles.add, { borderColor: theme.primary, opacity: pressed ? 0.7 : 1 }]}>
-            <Ionicons name="add-circle" size={30} color={theme.primary} />
-            <Text style={[styles.addText, { color: theme.primary }]}>{t('sections.add')}</Text>
-          </Pressable>
+          <AddButton theme={theme} label={t('sections.add')} onPress={() => router.push('/section-edit')} />
         ) : null}
 
         {sections && !sections.length ? <Muted theme={theme}>{t('sections.empty')}</Muted> : null}
@@ -104,7 +101,9 @@ export default function Workouts() {
                 <View style={styles.dragRow}>
                   {x.cover_media_id
                     ? <MediaImage mediaId={x.cover_media_id} style={styles.dragCover} />
-                    : <View style={[styles.dragCover, { backgroundColor: theme.primary, opacity: 0.25 }]} />}
+                    : <View style={[styles.dragCover, styles.noThumb, { borderColor: theme.border }]}>
+                        <Ionicons name="albums-outline" size={20} color={theme.muted} />
+                      </View>}
                   <Text style={[styles.dragName, { color: theme.text }]} numberOfLines={1}>{x.name}</Text>
                 </View>
               )}
@@ -113,27 +112,26 @@ export default function Workouts() {
         ) : null}
 
         {!reordering ? (sections ?? []).map((s) => (
-          <View key={s.id} style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Pressable style={styles.cardMain} accessibilityRole="button" accessibilityLabel={s.name}
-              onPress={() => router.push({ pathname: '/section/[id]', params: { id: s.id } })}>
-              {s.cover_media_id
-                ? <MediaImage mediaId={s.cover_media_id} refreshKey={mediaKey} style={styles.cover} />
-                : <View style={[styles.cover, { backgroundColor: theme.primary, opacity: 0.25 }]} />}
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={[styles.name, { color: theme.text }]} numberOfLines={2}>{s.name}</Text>
-                <Text style={{ color: theme.muted, fontSize: 14 }}>{workoutCount(language, counts[s.id] ?? 0)}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={22} color={theme.muted} />
-            </Pressable>
+          <Pressable key={s.id} accessibilityRole="button" accessibilityLabel={s.name}
+            onPress={() => router.push({ pathname: '/section/[id]', params: { id: s.id } })}
+            style={({ pressed }) => [styles.card, { backgroundColor: theme.surface, borderColor: theme.border, opacity: pressed ? 0.85 : 1 }]}>
+            {s.cover_media_id
+              ? <MediaImage mediaId={s.cover_media_id} refreshKey={mediaKey} style={styles.thumb} />
+              : <View style={[styles.thumb, styles.noThumb, { borderColor: theme.border }]}>
+                  <Ionicons name="albums-outline" size={28} color={theme.muted} />
+                </View>}
+            <View style={{ flex: 1, gap: 4 }}>
+              <Text style={[styles.name, { color: theme.text }]} numberOfLines={2}>{s.name}</Text>
+              <Text style={{ color: theme.muted, fontSize: 15 }}>{workoutCount(language, counts[s.id] ?? 0)}</Text>
+            </View>
             {isOwner ? (
-              <View style={styles.tools}>
-                <Pressable onPress={() => router.push({ pathname: '/section-edit', params: { id: s.id } })} hitSlop={8}
-                  accessibilityRole="button" accessibilityLabel={t('sections.edit')}>
-                  <Ionicons name="create-outline" size={22} color={theme.text} />
-                </Pressable>
-              </View>
+              <Pressable onPress={() => router.push({ pathname: '/section-edit', params: { id: s.id } })} hitSlop={10}
+                accessibilityRole="button" accessibilityLabel={t('sections.edit')}>
+                <Ionicons name="create-outline" size={22} color={theme.text} />
+              </Pressable>
             ) : null}
-          </View>
+            <Ionicons name="chevron-forward" size={22} color={theme.muted} />
+          </Pressable>
         )) : null}
       </KeyboardScroll>
     </ScreenBackground>
@@ -141,16 +139,12 @@ export default function Workouts() {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 20, gap: 14, paddingBottom: 40 },
-  add: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-    borderWidth: 2, borderStyle: 'dashed', borderRadius: 16, minHeight: 64,
-  },
-  addText: { fontSize: 18, fontWeight: '700' },
-  card: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
-  cardMain: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 12 },
-  cover: { width: 64, height: 64, borderRadius: 12 },
-  name: { fontSize: 19, fontWeight: '700' },
+  content: { padding: 20, gap: 12, paddingBottom: 40 },
+  // same card as a workout in a section
+  card: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 12, borderRadius: 16, borderWidth: 1 },
+  thumb: { width: 72, height: 72, borderRadius: 12 },
+  noThumb: { alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  name: { fontSize: 18, fontWeight: '700' },
   reorderBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     borderWidth: 1, borderRadius: 12, paddingVertical: 10, alignSelf: 'flex-end', paddingHorizontal: 16,
@@ -158,5 +152,4 @@ const styles = StyleSheet.create({
   dragRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   dragCover: { width: 44, height: 44, borderRadius: 10 },
   dragName: { flex: 1, fontSize: 17, fontWeight: '700' },
-  tools: { flexDirection: 'row', justifyContent: 'flex-end', gap: 22, paddingHorizontal: 16, paddingBottom: 12 },
 });

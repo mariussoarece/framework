@@ -1,4 +1,4 @@
-// Main -> Section -> list of workouts. The owner sees the big "+ Add workout".
+// Main -> Section -> list of workouts. The owner sees "+ Add workout".
 import { ScreenBackground } from '../../src/components/ScreenBackground';
 import React, { useCallback, useState } from 'react';
 import { KeyboardScroll } from '../../src/components/KeyboardScroll';
@@ -9,6 +9,7 @@ import { Message, Muted } from '../../src/components/ui';
 import { useI18n } from '../../src/i18n/I18nProvider';
 import { getSection, listSectionWorkouts, saveWorkoutOrder, workoutMedia, type Workout } from '../../src/lib/data';
 import { DragList } from '../../src/components/DragList';
+import { AddButton } from '../../src/components/AddButton';
 import { restText, workoutSummary } from '../../src/lib/format';
 import { useSession } from '../../src/lib/session';
 import { MediaImage } from '../../src/components/MediaImage';
@@ -74,12 +75,8 @@ export default function SectionScreen() {
         <Message text={error} />
 
         {isOwner ? (
-          <Pressable onPress={() => router.push({ pathname: '/workout-edit', params: { section: id } })}
-            accessibilityRole="button" accessibilityLabel={t('workouts.add')}
-            style={({ pressed }) => [styles.add, { borderColor: theme.primary, opacity: pressed ? 0.7 : 1 }]}>
-            <Ionicons name="add" size={44} color={theme.primary} />
-            <Text style={[styles.addText, { color: theme.primary }]}>{t('workouts.add')}</Text>
-          </Pressable>
+          <AddButton theme={theme} label={t('workouts.add')}
+            onPress={() => router.push({ pathname: '/workout-edit', params: { section: id } })} />
         ) : null}
 
         {rows && !rows.length ? <Muted theme={theme}>{t('workouts.empty')}</Muted> : null}
@@ -144,11 +141,6 @@ export default function SectionScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: 20, gap: 12, paddingBottom: 40 },
-  add: {
-    alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderStyle: 'dashed',
-    borderRadius: 18, minHeight: 110, gap: 2,
-  },
-  addText: { fontSize: 18, fontWeight: '700' },
   card: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 12, borderRadius: 16, borderWidth: 1 },
   thumb: { width: 72, height: 72, borderRadius: 12 },
   noThumb: { alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
