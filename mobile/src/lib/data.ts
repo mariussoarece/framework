@@ -99,6 +99,25 @@ export async function listSectionWorkouts(sectionId: string): Promise<Workout[]>
   return rows.map((r) => r.workouts).filter((w): w is Workout => Boolean(w));
 }
 
+// The workouts of a section with each one's first published picture, in ONE request
+// (before, every workout asked for its pictures separately, which was slow on a far-away server).
+export type WorkoutRow = Workout & { thumbId: string | null };
+
+export async function listSectionWorkoutRows(sectionId: string): Promise<WorkoutRow[]> {
+  type M = { position: number; media: { id: string; kind: string; status: string } | null };
+  const rows = check(await supabase.from('section_workouts')
+    .select('position, workouts(*, workout_media(position, media(id, kind, status)))')
+    .eq('section_id', sectionId).order('position')) as
+    unknown as { position: number; workouts: (Workout & { workout_media?: M[] }) | null }[];
+  return rows.flatMap((r) => {
+    if (!r.workouts) return [];
+    const { workout_media: media = [], ...w } = r.workouts;
+    const first = [...media].sort((a, b) => a.position - b.position)
+      .find((m) => m.media?.kind === 'image' && m.media.status === 'published');
+    return [{ ...(w as Workout), thumbId: first?.media?.id ?? null }];
+  });
+}
+
 export async function getWorkout(id: string): Promise<Workout | null> {
   return check(await supabase.from('workouts').select('*').eq('id', id).maybeSingle());
 }

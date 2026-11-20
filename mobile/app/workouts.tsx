@@ -12,6 +12,7 @@ import { listSections, saveSectionOrder, sectionWorkoutCounts, type Section } fr
 import { workoutCount } from '../src/lib/format';
 import { DragList } from '../src/components/DragList';
 import { AddButton } from '../src/components/AddButton';
+import { cached, remember } from '../src/lib/listCache';
 import { useSession } from '../src/lib/session';
 import { themeFor } from '../src/theme/themes';
 
@@ -21,13 +22,13 @@ export default function Workouts() {
   const navigation = useNavigation();
   const theme = themeFor(home?.theme_key);
   const isOwner = profile?.role === 'owner';
-  const [sections, setSections] = useState<Section[] | null>(null);
+  const [sections, setSections] = useState<Section[] | null>(() => cached<Section[]>('sections'));   // last list, shown at once
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [mediaKey, setMediaKey] = useState(0);   // bump to fetch pictures again (e.g. after approval)
   const [reordering, setReordering] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [counts, setCounts] = useState<Record<string, number>>(() => cached<Record<string, number>>('section-counts') ?? {});
 
   const title = buttons.find((b) => b.type === 'workouts')?.label ?? '';
 
@@ -35,8 +36,8 @@ export default function Workouts() {
     setMediaKey((k) => k + 1);
     try {
       const [list, c] = await Promise.all([listSections(), sectionWorkoutCounts()]);
-      setSections(list);
-      setCounts(c);
+      setSections(remember('sections', list));
+      setCounts(remember('section-counts', c));
       setError(null);
     } catch (err) {
       setError(tError(err));

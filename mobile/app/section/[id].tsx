@@ -7,7 +7,8 @@ import { router, useFocusEffect, useLocalSearchParams, useNavigation } from 'exp
 import { Ionicons } from '@expo/vector-icons';
 import { Message, Muted } from '../../src/components/ui';
 import { useI18n } from '../../src/i18n/I18nProvider';
-import { getSection, listSectionWorkouts, saveWorkoutOrder, workoutMedia, type Workout } from '../../src/lib/data';
+import { getSection, listSectionWorkoutRows, saveWorkoutOrder, type WorkoutRow } from '../../src/lib/data';
+import { cached, remember } from '../../src/lib/listCache';
 import { DragList } from '../../src/components/DragList';
 import { AddButton } from '../../src/components/AddButton';
 import { restText, workoutSummary } from '../../src/lib/format';
@@ -15,7 +16,7 @@ import { useSession } from '../../src/lib/session';
 import { MediaImage } from '../../src/components/MediaImage';
 import { themeFor } from '../../src/theme/themes';
 
-type Row = Workout & { thumbId: string | null };
+type Row = WorkoutRow;
 
 export default function SectionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -24,7 +25,8 @@ export default function SectionScreen() {
   const navigation = useNavigation();
   const theme = themeFor(home?.theme_key);
   const isOwner = profile?.role === 'owner';
-  const [rows, setRows] = useState<Row[] | null>(null);
+  const cacheKey = `section-workouts:${id}`;
+  const [rows, setRows] = useState<Row[] | null>(() => cached<Row[]>(cacheKey));   // last list, shown at once
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [mediaKey, setMediaKey] = useState(0);   // bump to fetch pictures again (e.g. after approval)
@@ -44,21 +46,15 @@ export default function SectionScreen() {
   const load = useCallback(async () => {
     setMediaKey((k) => k + 1);
     try {
-      const section = await getSection(id);
+      // name and list at the same time, the list with its pictures in one request
+      const [section, list] = await Promise.all([getSection(id), listSectionWorkoutRows(id)]);
       navigation.setOptions({ title: section?.name ?? '' });
-      const workouts = await listSectionWorkouts(id);
-      // first published picture as the card thumbnail
-      const withThumbs = await Promise.all(workouts.map(async (w) => {
-        const media = await workoutMedia(w.id).catch(() => []);
-        const img = media.find((m) => m.kind === 'image' && m.status === 'published');
-        return { ...w, thumbId: img?.id ?? null };
-      }));
-      setRows(withThumbs);
+      setRows(remember(cacheKey, list));
       setError(null);
     } catch (err) {
       setError(tError(err));
     }
-  }, [id, navigation, tError]);
+  }, [id, cacheKey, navigation, tError]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 

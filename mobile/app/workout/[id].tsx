@@ -29,9 +29,9 @@ export default function WorkoutScreen() {
   useFocusEffect(useCallback(() => {
     (async () => {
       try {
-        const workout = await getWorkout(id);
+        const [workout, m] = await Promise.all([getWorkout(id), workoutMedia(id)]);   // both at once
         setW(workout);
-        setMedia(await workoutMedia(id));
+        setMedia(m);
         navigation.setOptions({
           title: workout?.name ?? '',
           headerRight: isOwner ? () => (
