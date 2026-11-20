@@ -1,6 +1,7 @@
 // Calls to the Node server (<API_URL>/api/...).
 import { API_URL } from './config';
 import { supabase } from './supabase';
+import { cacheUsable } from './mediaCache';
 
 export class ApiError extends Error {
   constructor(public status: number, code: string) {
@@ -37,18 +38,18 @@ export type MediaLinks = {
   video_1080?: SignedLink;
 };
 
-// Signed links expire; keep them until shortly before that.
+// Signed links expire; reuse them until 10 minutes before that.
+// Only published media are kept: "waiting for approval" must be asked again,
+// otherwise an image approved later would never appear (bug before).
 const linkCache = new Map<string, MediaLinks>();
 
-export async function mediaLinks(id: string): Promise<MediaLinks> {
+export async function mediaLinks(id: string, fresh = false): Promise<MediaLinks> {
   const cached = linkCache.get(id);
-  const soonest = cached && Math.min(
-    ...[cached.image, cached.video_720, cached.video_1080].filter(Boolean).map((l) => l!.expires),
-  );
-  if (cached && soonest && soonest * 1000 - Date.now() > 10 * 60 * 1000) return cached;
-  const fresh = await call<MediaLinks>('GET', `/api/media/${encodeURIComponent(id)}/url`);
-  linkCache.set(id, fresh);
-  return fresh;
+  if (!fresh && cacheUsable(cached, Date.now())) return cached!;
+  const links = await call<MediaLinks>('GET', `/api/media/${encodeURIComponent(id)}/url`);
+  if (links.status === 'published') linkCache.set(id, links);
+  else linkCache.delete(id);
+  return links;
 }
 
 export const api = {

@@ -22,6 +22,7 @@ export default function Workouts() {
   const [sections, setSections] = useState<Section[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [mediaKey, setMediaKey] = useState(0);   // bump to fetch pictures again (e.g. after approval)
   const [reordering, setReordering] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [counts, setCounts] = useState<Record<string, number>>({});
@@ -29,6 +30,7 @@ export default function Workouts() {
   const title = buttons.find((b) => b.type === 'workouts')?.label ?? '';
 
   const load = useCallback(async () => {
+    setMediaKey((k) => k + 1);
     try {
       const [list, c] = await Promise.all([listSections(), sectionWorkoutCounts()]);
       setSections(list);
@@ -113,7 +115,7 @@ export default function Workouts() {
           <Pressable style={styles.cardMain} accessibilityRole="button" accessibilityLabel={s.name}
             onPress={() => router.push({ pathname: '/section/[id]', params: { id: s.id } })}>
             {s.cover_media_id
-              ? <MediaImage mediaId={s.cover_media_id} style={styles.cover} />
+              ? <MediaImage mediaId={s.cover_media_id} refreshKey={mediaKey} style={styles.cover} />
               : <View style={[styles.cover, { backgroundColor: theme.primary, opacity: 0.25 }]} />}
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={[styles.name, { color: theme.text }]} numberOfLines={2}>{s.name}</Text>

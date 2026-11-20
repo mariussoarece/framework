@@ -1,7 +1,7 @@
 // The organization's branded main page: name, background, foreground image,
 // description and the two buttons (Scheduling, Workouts) the owner configured.
 import React from 'react';
-import { router, Redirect } from 'expo-router';
+import { router, Redirect, useFocusEffect } from 'expo-router';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +18,8 @@ export default function Home() {
   const { ready, org, home, buttons, profile, refresh } = useSession();
   const isOwner = profile?.role === 'owner';
   const [refreshing, setRefreshing] = React.useState(false);
+  const [mediaKey, setMediaKey] = React.useState(0);     // bump to fetch the images again
+  useFocusEffect(React.useCallback(() => { setMediaKey((k) => k + 1); }, []));
   const theme = themeFor(home?.theme_key);
 
   if (!ready) return <Loading />;
@@ -32,13 +34,18 @@ export default function Home() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
       {home?.background_media_id
-        ? <MediaImage mediaId={home.background_media_id} style={StyleSheet.absoluteFill} />
+        ? <MediaImage mediaId={home.background_media_id} refreshKey={mediaKey} style={StyleSheet.absoluteFill} />
         : null}
       <SafeAreaView style={{ flex: 1 }}>
         <ScrollView
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} tintColor={theme.text}
-            onRefresh={async () => { setRefreshing(true); await refresh().catch(() => {}); setRefreshing(false); }} />}
+            onRefresh={async () => {
+              setRefreshing(true);
+              await refresh().catch(() => {});
+              setMediaKey((k) => k + 1);
+              setRefreshing(false);
+            }} />}
         >
           <View style={styles.header}>
             <Text style={[styles.orgName, { color: theme.text }]} accessibilityRole="header" numberOfLines={2}>
@@ -61,7 +68,7 @@ export default function Home() {
           {paused ? <Message text={t('home.paused')} /> : null}
 
           {home?.foreground_media_id ? (
-            <MediaImage mediaId={home.foreground_media_id} contentFit="contain" style={styles.foreground}
+            <MediaImage mediaId={home.foreground_media_id} refreshKey={mediaKey} contentFit="contain" style={styles.foreground}
               label={org.name} />
           ) : null}
 

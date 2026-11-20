@@ -25,6 +25,7 @@ export default function SectionScreen() {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [mediaKey, setMediaKey] = useState(0);   // bump to fetch pictures again (e.g. after approval)
   const [reordering, setReordering] = useState(false);
   const [dragging, setDragging] = useState(false);
 
@@ -39,6 +40,7 @@ export default function SectionScreen() {
   }
 
   const load = useCallback(async () => {
+    setMediaKey((k) => k + 1);
     try {
       const section = await getSection(id);
       navigation.setOptions({ title: section?.name ?? '' });
@@ -120,7 +122,7 @@ export default function SectionScreen() {
           onPress={() => router.push({ pathname: '/workout/[id]', params: { id: w.id } })}
           style={({ pressed }) => [styles.card, { backgroundColor: theme.surface, borderColor: theme.border, opacity: pressed ? 0.85 : 1 }]}>
           {w.thumbId
-            ? <MediaImage mediaId={w.thumbId} style={styles.thumb} />
+            ? <MediaImage mediaId={w.thumbId} refreshKey={mediaKey} style={styles.thumb} />
             : <View style={[styles.thumb, styles.noThumb, { borderColor: theme.border }]}>
                 <Ionicons name="body-outline" size={28} color={theme.muted} />
               </View>}

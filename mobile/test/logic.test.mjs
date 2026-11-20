@@ -14,7 +14,7 @@ const ts = require(process.env.TS_PATH || 'typescript');
 
 // Compile the .ts modules we test into a temp folder as .mjs files.
 const out = mkdtempSync(join(tmpdir(), 'mobile-logic-'));
-for (const rel of ['src/i18n/en.ts', 'src/i18n/ro.ts', 'src/i18n/translate.ts', 'src/lib/richtext.ts', 'src/lib/format.ts', 'src/lib/video.ts', 'src/lib/schedule.ts', 'src/lib/pickerValues.ts', 'src/lib/reorder.ts']) {
+for (const rel of ['src/i18n/en.ts', 'src/i18n/ro.ts', 'src/i18n/translate.ts', 'src/lib/richtext.ts', 'src/lib/format.ts', 'src/lib/video.ts', 'src/lib/schedule.ts', 'src/lib/pickerValues.ts', 'src/lib/reorder.ts', 'src/lib/mediaCache.ts']) {
   const src = readFileSync(join(here, '..', rel), 'utf8');
   const js = ts.transpileModule(src, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } })
     .outputText.replace(/from '(\.\.?\/[^']+)'/g, (_, p) => `from './${p.split('/').pop()}.mjs'`);
@@ -31,6 +31,7 @@ const { pickVideoUrl } = await load('video.mjs');
 const sch = await load('schedule.mjs');
 const pv = await load('pickerValues.mjs');
 const ro2 = await load('reorder.mjs');
+const mc = await load('mediaCache.mjs');
 
 test('Romanian has exactly the English keys, none empty', () => {
   assert.deepEqual(Object.keys(ro).sort(), Object.keys(en).sort());
@@ -247,4 +248,15 @@ test('number of workouts, with Romanian grammar', () => {
   assert.deepEqual([0, 1, 2, 19].map((n) => workoutCount('en', n)), ['0 workouts', '1 workout', '2 workouts', '19 workouts']);
   assert.deepEqual([0, 1, 5, 19, 20, 101, 120].map((n) => workoutCount('ro', n)),
     ['0 exerciții', '1 exercițiu', '5 exerciții', '19 exerciții', '20 de exerciții', '101 exerciții', '120 de exerciții']);
+});
+
+test('picture links: approved ones are reused, waiting ones are asked again', () => {
+  const now = 1_700_000_000_000;
+  const later = Math.floor(now / 1000) + 3600;
+  assert.equal(mc.cacheUsable({ status: 'pending' }, now), false, 'waiting for approval: ask again (the bug)');
+  assert.equal(mc.cacheUsable({ status: 'approved' }, now), false, 'being converted: ask again');
+  assert.equal(mc.cacheUsable({ status: 'published', image: { expires: later } }, now), true);
+  assert.equal(mc.cacheUsable({ status: 'published', image: { expires: Math.floor(now / 1000) + 300 } }, now), false, 'about to expire');
+  assert.equal(mc.cacheUsable({ status: 'published' }, now), false, 'published but no link');
+  assert.equal(mc.cacheUsable(undefined, now), false);
 });

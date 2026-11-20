@@ -4,28 +4,29 @@ import { Image, type ImageContentFit } from 'expo-image';
 import type { StyleProp, ImageStyle } from 'react-native';
 import { mediaLinks } from '../lib/api';
 
-export function useMediaUrl(mediaId: string | null | undefined): string | null {
+// refreshKey: change it (e.g. on pull-to-refresh) to ask the server again.
+export function useMediaUrl(mediaId: string | null | undefined, refreshKey = 0): string | null {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
-    setUrl(null);
     if (mediaId) {
       mediaLinks(mediaId)
         .then((l) => { if (alive) setUrl(l.image?.url ?? null); })
         .catch(() => { if (alive) setUrl(null); });
-    }
+    } else setUrl(null);
     return () => { alive = false; };
-  }, [mediaId]);
+  }, [mediaId, refreshKey]);
   return url;
 }
 
-export function MediaImage({ mediaId, style, contentFit = 'cover', label }: {
+export function MediaImage({ mediaId, style, contentFit = 'cover', label, refreshKey }: {
   mediaId: string | null | undefined;
+  refreshKey?: number;
   style?: StyleProp<ImageStyle>;
   contentFit?: ImageContentFit;
   label?: string;
 }) {
-  const url = useMediaUrl(mediaId);
+  const url = useMediaUrl(mediaId, refreshKey);
   if (!url) return null;
   // cache by media id, not by the (changing) signed URL
   return (
