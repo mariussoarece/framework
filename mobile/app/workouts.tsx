@@ -1,13 +1,14 @@
 // Main -> Sections. Clients pick a section; the owner also adds, edits and reorders sections.
 import React, { useCallback, useState } from 'react';
 import { KeyboardScroll } from '../src/components/KeyboardScroll';
-import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { MediaImage } from '../src/components/MediaImage';
 import { Message, Muted } from '../src/components/ui';
 import { useI18n } from '../src/i18n/I18nProvider';
-import { listSections, moveSection, type Section } from '../src/lib/data';
+import { listSections, saveSectionOrder, type Section } from '../src/lib/data';
+import { DragList } from '../src/components/DragList';
 import { useSession } from '../src/lib/session';
 import { themeFor } from '../src/theme/themes';
 
@@ -20,6 +21,8 @@ export default function Workouts() {
   const [sections, setSections] = useState<Section[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [reordering, setReordering] = useState(false);
+  const [dragging, setDragging] = useState(false);
 
   const title = buttons.find((b) => b.type === 'workouts')?.label ?? '';
 
@@ -37,18 +40,19 @@ export default function Workouts() {
     load();
   }, [load, navigation, title]));
 
-  async function move(i: number, dir: -1 | 1) {
-    if (!sections) return;
+  async function reorder(next: Section[]) {
+    setSections(next);                       // show the new order right away
     try {
-      await moveSection(sections, i, dir);
-      await load();
+      await saveSectionOrder(next);
     } catch (err) {
-      setError(tError(err));
+      Alert.alert(t('schedule.notPossible'), tError(err));
     }
+    await load();
   }
 
   return (
     <KeyboardScroll
+      scrollEnabled={!dragging}
       contentInsetAdjustmentBehavior="automatic"
       style={{ flex: 1, backgroundColor: theme.background }}
       contentContainerStyle={styles.content}
@@ -67,7 +71,40 @@ export default function Workouts() {
 
       {sections && !sections.length ? <Muted theme={theme}>{t('sections.empty')}</Muted> : null}
 
-      {(sections ?? []).map((s, i) => (
+      {isOwner && sections && sections.length > 1 ? (
+        <Pressable onPress={() => setReordering(!reordering)} accessibilityRole="button"
+          style={[styles.reorderBtn, { borderColor: theme.border, backgroundColor: reordering ? theme.primary : theme.surface }]}>
+          <Ionicons name={reordering ? 'checkmark' : 'swap-vertical'} size={20} color={reordering ? theme.onPrimary : theme.text} />
+          <Text style={{ fontSize: 15, fontWeight: '700', color: reordering ? theme.onPrimary : theme.text }}>
+            {reordering ? t('common.done') : t('sections.reorder')}
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {reordering && sections ? (
+        <>
+          <Muted theme={theme}>{t('sections.reorderHint')}</Muted>
+          <DragList
+            items={sections}
+            keyOf={(x) => x.id}
+            theme={theme}
+            moveUpLabel={t('sections.moveUp')}
+            moveDownLabel={t('sections.moveDown')}
+            onDragging={setDragging}
+            onReorder={reorder}
+            renderRow={(x) => (
+              <View style={styles.dragRow}>
+                {x.cover_media_id
+                  ? <MediaImage mediaId={x.cover_media_id} style={styles.dragCover} />
+                  : <View style={[styles.dragCover, { backgroundColor: theme.primary, opacity: 0.25 }]} />}
+                <Text style={[styles.dragName, { color: theme.text }]} numberOfLines={1}>{x.name}</Text>
+              </View>
+            )}
+          />
+        </>
+      ) : null}
+
+      {!reordering ? (sections ?? []).map((s) => (
         <View key={s.id} style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Pressable style={styles.cardMain} accessibilityRole="button" accessibilityLabel={s.name}
             onPress={() => router.push({ pathname: '/section/[id]', params: { id: s.id } })}>
@@ -79,14 +116,6 @@ export default function Workouts() {
           </Pressable>
           {isOwner ? (
             <View style={styles.tools}>
-              <Pressable onPress={() => move(i, -1)} disabled={i === 0} hitSlop={8}
-                accessibilityRole="button" accessibilityLabel={t('sections.moveUp')}>
-                <Ionicons name="arrow-up" size={22} color={i === 0 ? theme.border : theme.text} />
-              </Pressable>
-              <Pressable onPress={() => move(i, 1)} disabled={i === sections!.length - 1} hitSlop={8}
-                accessibilityRole="button" accessibilityLabel={t('sections.moveDown')}>
-                <Ionicons name="arrow-down" size={22} color={i === sections!.length - 1 ? theme.border : theme.text} />
-              </Pressable>
               <Pressable onPress={() => router.push({ pathname: '/section-edit', params: { id: s.id } })} hitSlop={8}
                 accessibilityRole="button" accessibilityLabel={t('sections.edit')}>
                 <Ionicons name="create-outline" size={22} color={theme.text} />
@@ -94,7 +123,7 @@ export default function Workouts() {
             </View>
           ) : null}
         </View>
-      ))}
+      )) : null}
     </KeyboardScroll>
   );
 }
@@ -110,5 +139,12 @@ const styles = StyleSheet.create({
   cardMain: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 12 },
   cover: { width: 64, height: 64, borderRadius: 12 },
   name: { flex: 1, fontSize: 19, fontWeight: '700' },
+  reorderBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    borderWidth: 1, borderRadius: 12, paddingVertical: 10, alignSelf: 'flex-end', paddingHorizontal: 16,
+  },
+  dragRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  dragCover: { width: 44, height: 44, borderRadius: 10 },
+  dragName: { flex: 1, fontSize: 17, fontWeight: '700' },
   tools: { flexDirection: 'row', justifyContent: 'flex-end', gap: 22, paddingHorizontal: 16, paddingBottom: 12 },
 });

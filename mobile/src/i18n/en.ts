@@ -271,6 +271,8 @@ export const en = {
   'schedule.week1': "1 week",
   'schedule.people': "{n}",
   'schedule.classPastMidnight': "The class must end by midnight. Choose an earlier start or a shorter length.",
+  'sections.reorder': "Reorder",
+  'sections.reorderHint': "Hold ≡ and drag a section to its new place. Clients see this order.",
   'error.name_taken': 'This name is already taken. Please choose another.',
   'error.organization_not_found': 'No organization has this code.',
   'error.already_owner': 'You already own an organization.',

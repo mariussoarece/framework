@@ -273,6 +273,8 @@ export const ro: Record<TextKey, string> = {
   'schedule.week1': "1 săptămână",
   'schedule.people': "{n}",
   'schedule.classPastMidnight': "Clasa trebuie să se termine până la miezul nopții. Alege o oră de început mai devreme sau o durată mai scurtă.",
+  'sections.reorder': "Reordonează",
+  'sections.reorderHint': "Ține apăsat ≡ și trage secțiunea în noul loc. Clienții văd această ordine.",
   'error.name_taken': 'Acest nume este deja folosit. Te rugăm să alegi altul.',
   'error.organization_not_found': 'Nicio organizație nu are acest cod.',
   'error.already_owner': 'Deții deja o organizație.',

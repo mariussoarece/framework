@@ -14,7 +14,7 @@ const ts = require(process.env.TS_PATH || 'typescript');
 
 // Compile the .ts modules we test into a temp folder as .mjs files.
 const out = mkdtempSync(join(tmpdir(), 'mobile-logic-'));
-for (const rel of ['src/i18n/en.ts', 'src/i18n/ro.ts', 'src/i18n/translate.ts', 'src/lib/richtext.ts', 'src/lib/format.ts', 'src/lib/video.ts', 'src/lib/schedule.ts', 'src/lib/pickerValues.ts']) {
+for (const rel of ['src/i18n/en.ts', 'src/i18n/ro.ts', 'src/i18n/translate.ts', 'src/lib/richtext.ts', 'src/lib/format.ts', 'src/lib/video.ts', 'src/lib/schedule.ts', 'src/lib/pickerValues.ts', 'src/lib/reorder.ts']) {
   const src = readFileSync(join(here, '..', rel), 'utf8');
   const js = ts.transpileModule(src, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } })
     .outputText.replace(/from '(\.\.?\/[^']+)'/g, (_, p) => `from './${p.split('/').pop()}.mjs'`);
@@ -29,6 +29,7 @@ const { workoutSummary, restText, duration, positiveInt } = await load('format.m
 const { pickVideoUrl } = await load('video.mjs');
 const sch = await load('schedule.mjs');
 const pv = await load('pickerValues.mjs');
+const ro2 = await load('reorder.mjs');
 
 test('Romanian has exactly the English keys, none empty', () => {
   assert.deepEqual(Object.keys(ro).sort(), Object.keys(en).sort());
@@ -223,4 +224,19 @@ test('dates show the year only from next year on', () => {
   assert.doesNotMatch(sch.dayLabel('2026-12-28', 'en', 2026), /2026/);
   assert.match(sch.dayLabel('2027-01-04', 'en', 2026), /2027/);
   assert.match(sch.dayLabel('2028-01-03', 'ro', 2026), /2028/);
+});
+
+test('drag-and-drop: moving rows and where they land', () => {
+  const l = ['Shoulders', 'Legs', 'Karate', 'Relax'];
+  assert.deepEqual(ro2.moveItem(l, 0, 2), ['Legs', 'Karate', 'Shoulders', 'Relax']);
+  assert.deepEqual(ro2.moveItem(l, 3, 0), ['Relax', 'Shoulders', 'Legs', 'Karate']);
+  assert.deepEqual(ro2.moveItem(l, 1, 9), ['Shoulders', 'Karate', 'Relax', 'Legs'], 'past the end -> last');
+  assert.deepEqual(l, ['Shoulders', 'Legs', 'Karate', 'Relax'], 'original list untouched');
+  assert.equal(ro2.dropIndex(0, 150, 72, 4), 2, 'dragged ~2 rows down');
+  assert.equal(ro2.dropIndex(3, -1000, 72, 4), 0, 'never above the first');
+  assert.equal(ro2.dropIndex(1, 20, 72, 4), 1, 'a small move stays put');
+  // dragging row 0 over row 2: rows 1 and 2 move up one row, row 3 stays
+  assert.deepEqual([1, 2, 3].map((i) => ro2.shiftFor(i, 0, 2, 72)), [-72, -72, 0]);
+  // dragging row 3 over row 1: rows 1 and 2 move down
+  assert.deepEqual([0, 1, 2].map((i) => ro2.shiftFor(i, 3, 1, 72)), [0, 72, 72]);
 });

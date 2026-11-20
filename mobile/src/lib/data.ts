@@ -66,14 +66,12 @@ export async function deleteSection(id: string): Promise<void> {
   }
 }
 
-// Swap a section with its neighbour (direction -1 = up, +1 = down).
-export async function moveSection(sections: Section[], index: number, direction: -1 | 1): Promise<void> {
-  const other = index + direction;
-  if (other < 0 || other >= sections.length) return;
-  const ordered = sections.map((s, i) => ({ id: s.id, position: i }));
-  [ordered[index].position, ordered[other].position] = [ordered[other].position, ordered[index].position];
-  for (const s of [ordered[index], ordered[other]]) {
-    check(await supabase.from('sections').update({ position: s.position }).eq('id', s.id));
+// Saves a new order (after drag-and-drop): position = place in the list.
+export async function saveSectionOrder(ordered: Section[]): Promise<void> {
+  for (let i = 0; i < ordered.length; i += 1) {
+    if (ordered[i].position !== i) {
+      check(await supabase.from('sections').update({ position: i }).eq('id', ordered[i].id));
+    }
   }
 }
 
