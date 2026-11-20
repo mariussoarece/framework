@@ -144,7 +144,7 @@ export const en = {
   'schedule.myBookings': "My bookings",
   'schedule.requests': "Approve",
   'schedule.upcoming': "Upcoming",
-  'schedule.timetable': "Schedule",
+  'schedule.timetable': "Scheduler",
   'schedule.daysOff': "Days off",
   'schedule.noSlots': "No free times in the next two weeks.",
   'schedule.places': "{n} places left",

@@ -48,10 +48,12 @@ export function clock(iso: string, timeZone: string, language: Language): string
     .format(new Date(iso));
 }
 
-// "Thursday, 20 November"
-export function dayLabel(key: string, language: Language): string {
-  return new Intl.DateTimeFormat(locale(language), { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long' })
-    .format(new Date(`${key}T12:00:00Z`));
+// "Thursday, 20 November"; from next year on the year is added: "Monday, 4 January 2027"
+export function dayLabel(key: string, language: Language, currentYear: number = new Date().getFullYear()): string {
+  const withYear = Number(key.slice(0, 4)) !== currentYear;
+  return new Intl.DateTimeFormat(locale(language), {
+    timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long', ...(withYear ? { year: 'numeric' as const } : {}),
+  }).format(new Date(`${key}T12:00:00Z`));
 }
 
 // 0 = Sunday ... 6 = Saturday (as in the database)

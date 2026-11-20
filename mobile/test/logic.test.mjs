@@ -218,3 +218,9 @@ test('database limits show a helpful message, not "something went wrong"', () =>
   assert.equal(errorText('en', err), en['schedule.lengthInvalid']);
   assert.match(errorText('en', err), /600/);
 });
+
+test('dates show the year only from next year on', () => {
+  assert.doesNotMatch(sch.dayLabel('2026-12-28', 'en', 2026), /2026/);
+  assert.match(sch.dayLabel('2027-01-04', 'en', 2026), /2027/);
+  assert.match(sch.dayLabel('2028-01-03', 'ro', 2026), /2028/);
+});
