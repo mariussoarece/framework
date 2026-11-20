@@ -52,6 +52,8 @@ export function errorText(language: Language, err: unknown): string {
     capacity_below_booked: 'error.capacity_below_booked',
     slot_has_bookings: 'error.slot_has_bookings',
     content_reports_one_open_uq: 'error.already_reported',
+    day_off: 'error.day_off',
+    slot_not_found: 'error.slot_not_found',
     booking_not_active: 'error.booking_changed',
     'invalid login credentials': 'error.invalid_credentials',
     'email not confirmed': 'error.email_not_confirmed',

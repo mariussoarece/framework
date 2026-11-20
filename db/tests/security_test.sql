@@ -250,6 +250,12 @@ select test.ok(not exists (select 1 from public.available_slots(current_date, 14
   where starts_at = current_setting('test.open')::timestamptz), 'clients cannot book a blocked session');
 reset role; select test.claims(:u2, 'owner.b@example.com'); set role authenticated;
 select public.block_slot(current_setting('test.open')::timestamptz, false);
+insert into public.availability_exceptions (organization_id, day, closed) select app.my_org(), current_setting('test.wed')::date, true;
+select test.fails($$select public.block_slot(current_setting('test.open')::timestamptz, true)$$, 'day_off',
+  'blocking on a whole day off says so');
+delete from public.availability_exceptions where day = current_setting('test.wed')::date and start_time is null;
+select test.fails($$select public.block_slot(now() + interval '3 days 17 minutes', true)$$, 'slot_not_found',
+  'blocking a session that does not exist says so');
 select test.ok(not (select blocked from public.day_slots(current_setting('test.wed')::date) where starts_at = current_setting('test.open')::timestamptz),
   'session unblocked');
 reset role; select test.claims(:u4, 'client.b@example.com'); set role authenticated;

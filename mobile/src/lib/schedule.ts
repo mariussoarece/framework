@@ -117,3 +117,9 @@ export function bookableRange(week: string, todayKey: string): { from: string; d
   const days = Math.round((Date.parse(`${end}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86400000) + 1;
   return { from, days };
 }
+
+// Choices offered by the timetable form.
+export const SESSION_LENGTHS = [10, 15, 20, 30, 45, 60, 75, 90, 120, 150, 180, 240];
+export const MAX_ATTENDANTS = 100;
+export const MAX_WEEKS = 52;
+export const range1 = (max: number) => Array.from({ length: max }, (_, i) => i + 1);

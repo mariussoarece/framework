@@ -6,7 +6,7 @@ import { Alert, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } f
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Choice, Message, Muted, Tabs } from '../components/ui';
-import { DateField, TimeField } from '../components/pickers';
+import { DateField, OptionField, TimeField } from '../components/pickers';
 import { BookingCard } from './BookingCard';
 import { WeekView } from './WeekView';
 import { useI18n } from '../i18n/I18nProvider';
@@ -17,7 +17,7 @@ import {
 } from '../lib/data';
 import {
   addMinutes, clock, dayKey, dayLabel, formatMoney, isIsoDate, minutesOf, parseMoney, parseTime, shortTime, today,
-  untilForWeeks, WEEK_ORDER, weekdayName, weeksBetween,
+  untilForWeeks, WEEK_ORDER, weekdayName, weeksBetween, SESSION_LENGTHS, MAX_ATTENDANTS, MAX_WEEKS, range1,
 } from '../lib/schedule';
 import { positiveInt } from '../lib/format';
 import { useSession } from '../lib/session';
@@ -107,14 +107,14 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
       return setError(t('schedule.lengthInvalid'));
     }
     const capacity = positiveInt(form.capacity);
-    if (!capacity || capacity > 200) return setError(t('workout.invalidNumbers'));
+    if (!capacity || capacity > MAX_ATTENDANTS) return setError(t('workout.invalidNumbers'));
     const price = paid ? (form.price.trim() ? parseMoney(form.price) : 0) : 0;
     if (price === null) return setError(t('workout.invalidNumbers'));
     if (!isIsoDate(form.startsOn)) return setError(t('schedule.dayInvalid'));
     let until: string | null = null;
     if (form.repeat === 'weeks') {
       const weeks = positiveInt(form.weeks);
-      if (!weeks || weeks > 104) return setError(t('schedule.weeksInvalid'));
+      if (!weeks || weeks > MAX_WEEKS) return setError(t('schedule.weeksInvalid'));
       until = untilForWeeks(form.startsOn, weeks);
     }
     await run(async () => {
@@ -161,6 +161,7 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
     if (!isIsoDate(d) || d < today(tz)) return setError(t('schedule.dayInvalid'));
     if (daysOff.some((x) => x.day === d)) { setNewDay(''); return; }
     await run(async () => { await addDayOff(org!.id, d); setNewDay(''); });
+    if (blockDay === d) setBlockList([]);
   }
 
   async function showDay(chosen?: string) {
@@ -174,11 +175,11 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
     setError(null);
     try {
       await blockSlot(s.starts_at, !s.blocked);
-      setBlockList(await daySlots(blockDay.trim()));
       setReloadKey((k) => k + 1);
     } catch (err) {
-      setError(tError(err));
+      Alert.alert(t('schedule.notPossible'), tError(err));
     }
+    try { setBlockList(await daySlots(blockDay.trim())); } catch { /* list stays; pull to refresh */ }
   }
 
   // ---------------------------------------------------------------- UI helpers
@@ -203,7 +204,12 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
       refreshControl={<RefreshControl refreshing={refreshing}
-        onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
+        onRefresh={async () => {
+          setRefreshing(true);
+          await load();
+          if (blockDay) await showDay(blockDay);
+          setRefreshing(false);
+        }} />}
     >
       <Tabs theme={theme} value={tab} onChange={(k) => { setTab(k); setError(null); }} tabs={[
         { key: 'requests', label: t('schedule.requests'), badge: requests.length },
@@ -305,7 +311,8 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
                   <View style={styles.pair}>
                     <TimeField flex theme={theme} label={t('schedule.startTime')} value={form.from}
                       onChange={(v) => setForm({ ...form, from: v })} />
-                    {labelled(t('schedule.classLength'), input(form.length, (v) => setForm({ ...form, length: v.replace(/[^0-9]/g, '') }), { numeric: true }))}
+                    <OptionField flex theme={theme} label={t('schedule.classLength')} value={Number(form.length)} options={SESSION_LENGTHS}
+                      format={(n) => t('schedule.minutes', { n })} onChange={(n) => setForm({ ...form, length: String(n) })} />
                   </View>
                 </>
               ) : (
@@ -316,12 +323,15 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
                     <TimeField flex theme={theme} label={t('schedule.to')} value={form.to}
                       onChange={(v) => setForm({ ...form, to: v })} />
                   </View>
-                  {labelled(t('schedule.length'), input(form.length, (v) => setForm({ ...form, length: v.replace(/[^0-9]/g, '') }), { numeric: true }))}
+                  <OptionField flex theme={theme} label={t('schedule.length')} value={Number(form.length)} options={SESSION_LENGTHS}
+                      format={(n) => t('schedule.minutes', { n })} onChange={(n) => setForm({ ...form, length: String(n) })} />
                 </>
               )}
 
               <View style={styles.pair}>
-                {labelled(t('schedule.attendants'), input(form.capacity, (v) => setForm({ ...form, capacity: v.replace(/[^0-9]/g, '') }), { numeric: true }))}
+                <OptionField flex theme={theme} label={t('schedule.attendants')} value={Number(form.capacity)}
+                  options={range1(MAX_ATTENDANTS)} format={(n) => String(n)}
+                  onChange={(n) => setForm({ ...form, capacity: String(n) })} />
                 {paid ? labelled(t('schedule.price'), input(form.price, (v) => setForm({ ...form, price: v }), { numeric: true, placeholder: '30' })) : <View style={{ flex: 1 }} />}
               </View>
               {!paid ? <Muted theme={theme}>{t('schedule.priceNone')}</Muted> : null}
@@ -336,7 +346,9 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
                   minimum={form.id && form.startsOn < today(tz) ? form.startsOn : today(tz)}
                   onChange={(v) => setForm({ ...form, startsOn: v })} />
                 {form.repeat === 'weeks'
-                  ? labelled(t('schedule.weeks'), input(form.weeks, (v) => setForm({ ...form, weeks: v.replace(/[^0-9]/g, '') }), { numeric: true }))
+                  ? <OptionField flex theme={theme} label={t('schedule.weeks')} value={Number(form.weeks)}
+                      options={range1(MAX_WEEKS)} format={(n) => (n === 1 ? t('schedule.week1') : t('schedule.weeksN', { n }))}
+                      onChange={(n) => setForm({ ...form, weeks: String(n) })} />
                   : <View style={{ flex: 1 }} />}
               </View>
 
@@ -359,7 +371,8 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
           {daysOff.map((d) => (
             <View key={d.id} style={[styles.entry, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <Text style={[styles.entryDay, { color: theme.text, flex: 1 }]}>{dayLabel(d.day, language)}</Text>
-              <Pressable onPress={() => run(() => deleteDayOff(d.id))} hitSlop={10} accessibilityRole="button"
+              <Pressable onPress={async () => { await run(() => deleteDayOff(d.id)); if (blockDay === d.day) showDay(d.day); }}
+                hitSlop={10} accessibilityRole="button"
                 accessibilityLabel={t('common.delete')}>
                 <Ionicons name="trash-outline" size={22} color="#B3261E" />
               </Pressable>
@@ -372,8 +385,10 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
           <Muted theme={theme}>{t('schedule.blockHint')}</Muted>
           <DateField theme={theme} label={t('schedule.date')} value={blockDay} minimum={today(tz)}
             onChange={(v) => { setBlockDay(v); showDay(v); }} />
-          {blockList && !blockList.length ? <Muted theme={theme}>{t('schedule.noSessionsDay')}</Muted> : null}
-          {blockList && blockList.length ? (
+          {blockDay && daysOff.some((x) => x.day === blockDay)
+            ? <Message kind="info" text={t('schedule.dayIsOff')} />
+            : blockList && !blockList.length ? <Muted theme={theme}>{t('schedule.noSessionsDay')}</Muted> : null}
+          {blockList && blockList.length > 0 && !daysOff.some((x) => x.day === blockDay) ? (
             <View style={styles.slots}>
               {blockList.map((s) => (
                 <Pressable key={s.starts_at} onPress={() => toggleBlock(s)} accessibilityRole="switch"

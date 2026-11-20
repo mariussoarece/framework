@@ -193,3 +193,13 @@ test('pickers: dates and times round-trip without shifting', () => {
   }
   for (const t of ['00:00', '09:05', '17:30', '23:55']) assert.equal(pv.hhmmFromTime(pv.timeFromHHMM(t)), t);
 });
+
+test('timetable choices: lengths, attendants up to 100, weeks up to 52', () => {
+  assert.deepEqual(sch.SESSION_LENGTHS.slice(0, 4), [10, 15, 20, 30]);
+  assert.ok(sch.SESSION_LENGTHS.includes(60) && sch.SESSION_LENGTHS.includes(90));
+  assert.equal(sch.range1(sch.MAX_ATTENDANTS).length, 100);
+  assert.equal(sch.range1(sch.MAX_WEEKS).at(-1), 52);
+  assert.equal(errorText('en', { message: 'day_off' }), en['error.day_off']);
+  assert.equal(errorText('ro', { message: 'slot_not_found' }), ro['error.slot_not_found']);
+  assert.match(en['common.error'], /refresh/);
+});
