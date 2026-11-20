@@ -176,7 +176,7 @@ export const ro: Record<TextKey, string> = {
   'schedule.price': "Preț pe ședință (€)",
   'schedule.priceNone': "Clienții îți plătesc direct (plan fără plată online).",
   'schedule.hoursInvalid': "Verifică orele: folosește HH:MM, iar „Până la” trebuie să fie după „De la”.",
-  'schedule.lengthInvalid': "Durata trebuie să fie între 10 și 480 de minute și să încapă între „De la” și „Până la”.",
+  'schedule.lengthInvalid': "Durata trebuie să fie între 10 și 600 de minute (10 ore) și să încapă între „De la” și „Până la”.",
   'schedule.noHours': "Încă nu ai program. Adaugă orele în care clienții se pot programa.",
   'schedule.deleteHours': "Ștergi acest interval?",
   'schedule.addDayOff': "Adaugă zi liberă",

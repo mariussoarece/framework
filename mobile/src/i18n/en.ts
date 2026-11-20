@@ -174,7 +174,7 @@ export const en = {
   'schedule.price': "Price per session (€)",
   'schedule.priceNone': "Clients pay you in person (plan without online payment).",
   'schedule.hoursInvalid': "Check the times: use HH:MM, and \"To\" must be after \"From\".",
-  'schedule.lengthInvalid': "Session length must be between 10 and 480 minutes and fit between From and To.",
+  'schedule.lengthInvalid': "Session length must be between 10 and 600 minutes (10 hours) and fit between From and To.",
   'schedule.noHours': "No opening hours yet. Add the times when clients can book.",
   'schedule.deleteHours': "Delete these hours?",
   'schedule.addDayOff': "Add day off",

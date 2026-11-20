@@ -203,3 +203,12 @@ test('timetable choices: lengths, attendants up to 100, weeks up to 52', () => {
   assert.equal(errorText('ro', { message: 'slot_not_found' }), ro['error.slot_not_found']);
   assert.match(en['common.error'], /refresh/);
 });
+
+test('session lengths up to 10 hours, default 60', () => {
+  assert.deepEqual(sch.SESSION_LENGTHS.slice(-6), [300, 360, 420, 480, 540, 600]);
+  assert.equal(sch.DEFAULT_LENGTH, 60);
+  assert.equal(sch.lengthLabel(45), '45 min');
+  assert.equal(sch.lengthLabel(60), '60 min (1 h)');
+  assert.equal(sch.lengthLabel(90), '90 min (1 h 30)');
+  assert.equal(sch.lengthLabel(600), '600 min (10 h)');
+});

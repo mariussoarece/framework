@@ -17,7 +17,7 @@ import {
 } from '../lib/data';
 import {
   addMinutes, clock, dayKey, dayLabel, formatMoney, isIsoDate, minutesOf, parseMoney, parseTime, shortTime, today,
-  untilForWeeks, WEEK_ORDER, weekdayName, weeksBetween, SESSION_LENGTHS, MAX_ATTENDANTS, MAX_WEEKS, range1,
+  untilForWeeks, WEEK_ORDER, weekdayName, weeksBetween, SESSION_LENGTHS, MAX_ATTENDANTS, MAX_WEEKS, range1, lengthLabel, DEFAULT_LENGTH, MAX_LENGTH,
 } from '../lib/schedule';
 import { positiveInt } from '../lib/format';
 import { useSession } from '../lib/session';
@@ -60,7 +60,7 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
 
   const emptyForm = (kind: ScheduleKind): EntryForm => ({
     kind, weekdays: [], title: '', instructor: '',
-    from: kind === 'class' ? '18:00' : '09:00', to: '17:00', length: '60',
+    from: kind === 'class' ? '18:00' : '09:00', to: '17:00', length: String(DEFAULT_LENGTH),
     capacity: kind === 'class' ? '10' : '1', price: '', repeat: 'always', weeks: '4', startsOn: today(tz),
   });
 
@@ -97,7 +97,7 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
     const from = parseTime(form.from);
     const length = positiveInt(form.length);
     if (!from) return setError(t('schedule.hoursInvalid'));
-    if (!length || length < 10 || length > 480) return setError(t('schedule.lengthInvalid'));
+    if (!length || length < 10 || length > MAX_LENGTH) return setError(t('schedule.lengthInvalid'));
     let to: string | null = null;
     if (form.kind === 'open') {
       to = parseTime(form.to);
@@ -312,7 +312,7 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
                     <TimeField flex theme={theme} label={t('schedule.startTime')} value={form.from}
                       onChange={(v) => setForm({ ...form, from: v })} />
                     <OptionField flex theme={theme} label={t('schedule.classLength')} value={Number(form.length)} options={SESSION_LENGTHS}
-                      format={(n) => t('schedule.minutes', { n })} onChange={(n) => setForm({ ...form, length: String(n) })} />
+                      format={lengthLabel} onChange={(n) => setForm({ ...form, length: String(n) })} />
                   </View>
                 </>
               ) : (
@@ -324,7 +324,7 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
                       onChange={(v) => setForm({ ...form, to: v })} />
                   </View>
                   <OptionField flex theme={theme} label={t('schedule.length')} value={Number(form.length)} options={SESSION_LENGTHS}
-                      format={(n) => t('schedule.minutes', { n })} onChange={(n) => setForm({ ...form, length: String(n) })} />
+                      format={lengthLabel} onChange={(n) => setForm({ ...form, length: String(n) })} />
                 </>
               )}
 

@@ -213,6 +213,10 @@ select test.ok((select count(*) from public.save_availability(null, array[3], 'o
   current_date + 21, null)) = 1, 'same time is fine after the class period ends');
 select test.ok((select count(*) from public.save_availability(null, array[3], 'open', null, null, '07:00', '09:00', 30, 1, 0,
   current_date, null)) = 1, 'open hours next to the class are fine');
+select test.ok((select count(*) from public.save_availability(null, array[6], 'open', null, null, '08:00', '18:00', 600, 1, 0,
+  current_date, null)) = 1, 'a 10-hour session is allowed');
+select test.fails($$select public.save_availability(null, array[2], 'open', null, null, '07:00', '19:00', 660, 1, 0, current_date, null)$$,
+  'availability_slot_minutes_check', 'more than 10 hours is refused');
 select test.ok((select count(*) from public.week_overview(current_date, 28) where title = 'Low kick')
   between 8 and 10, 'class repeats only for its three weeks');
 select test.ok((select count(distinct kind) from public.week_overview(current_date, 7)) = 2, 'week view lists classes and open hours');

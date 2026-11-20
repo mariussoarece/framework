@@ -119,7 +119,17 @@ export function bookableRange(week: string, todayKey: string): { from: string; d
 }
 
 // Choices offered by the timetable form.
-export const SESSION_LENGTHS = [10, 15, 20, 30, 45, 60, 75, 90, 120, 150, 180, 240];
+export const SESSION_LENGTHS = [10, 15, 20, 30, 45, 60, 75, 90, 120, 150, 180, 240, 300, 360, 420, 480, 540, 600];
+export const DEFAULT_LENGTH = 60;
+export const MAX_LENGTH = 600;   // 10 hours (the database allows the same)
+
+// "45 min", "60 min (1 h)", "90 min (1 h 30)"
+export function lengthLabel(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${minutes} min (${h} h${m ? ` ${m}` : ''})`;
+}
 export const MAX_ATTENDANTS = 100;
 export const MAX_WEEKS = 52;
 export const range1 = (max: number) => Array.from({ length: max }, (_, i) => i + 1);
