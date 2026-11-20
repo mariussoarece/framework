@@ -7,13 +7,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { MediaImage } from '../src/components/MediaImage';
 import { Message, Muted } from '../src/components/ui';
 import { useI18n } from '../src/i18n/I18nProvider';
-import { listSections, saveSectionOrder, type Section } from '../src/lib/data';
+import { listSections, saveSectionOrder, sectionWorkoutCounts, type Section } from '../src/lib/data';
+import { workoutCount } from '../src/lib/format';
 import { DragList } from '../src/components/DragList';
 import { useSession } from '../src/lib/session';
 import { themeFor } from '../src/theme/themes';
 
 export default function Workouts() {
-  const { t, tError } = useI18n();
+  const { t, tError, language } = useI18n();
   const { home, buttons, profile } = useSession();
   const navigation = useNavigation();
   const theme = themeFor(home?.theme_key);
@@ -23,12 +24,15 @@ export default function Workouts() {
   const [refreshing, setRefreshing] = useState(false);
   const [reordering, setReordering] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [counts, setCounts] = useState<Record<string, number>>({});
 
   const title = buttons.find((b) => b.type === 'workouts')?.label ?? '';
 
   const load = useCallback(async () => {
     try {
-      setSections(await listSections());
+      const [list, c] = await Promise.all([listSections(), sectionWorkoutCounts()]);
+      setSections(list);
+      setCounts(c);
       setError(null);
     } catch (err) {
       setError(tError(err));
@@ -111,7 +115,10 @@ export default function Workouts() {
             {s.cover_media_id
               ? <MediaImage mediaId={s.cover_media_id} style={styles.cover} />
               : <View style={[styles.cover, { backgroundColor: theme.primary, opacity: 0.25 }]} />}
-            <Text style={[styles.name, { color: theme.text }]} numberOfLines={2}>{s.name}</Text>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={[styles.name, { color: theme.text }]} numberOfLines={2}>{s.name}</Text>
+              <Text style={{ color: theme.muted, fontSize: 14 }}>{workoutCount(language, counts[s.id] ?? 0)}</Text>
+            </View>
             <Ionicons name="chevron-forward" size={22} color={theme.muted} />
           </Pressable>
           {isOwner ? (
@@ -138,7 +145,7 @@ const styles = StyleSheet.create({
   card: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
   cardMain: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 12 },
   cover: { width: 64, height: 64, borderRadius: 12 },
-  name: { flex: 1, fontSize: 19, fontWeight: '700' },
+  name: { fontSize: 19, fontWeight: '700' },
   reorderBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     borderWidth: 1, borderRadius: 12, paddingVertical: 10, alignSelf: 'flex-end', paddingHorizontal: 16,

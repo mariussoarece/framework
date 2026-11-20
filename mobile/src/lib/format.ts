@@ -33,3 +33,11 @@ export function positiveInt(text: string, allowZero = false): number | null {
   const n = Number(text.trim());
   return n > 0 || (allowZero && n === 0) ? n : null;
 }
+
+// "1 workout", "3 workouts" / "1 exercițiu", "5 exerciții", "20 de exerciții"
+export function workoutCount(language: Language, n: number): string {
+  if (n === 1) return translate(language, 'sections.count1', { n });
+  const rest = n % 100;
+  const romanianDe = language === 'ro' && n !== 0 && (rest === 0 || rest >= 20);
+  return translate(language, romanianDe ? 'sections.countDe' : 'sections.countN', { n });
+}

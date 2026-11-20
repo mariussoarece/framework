@@ -25,7 +25,8 @@ const { en } = await load('en.mjs');
 const { ro } = await load('ro.mjs');
 const { translate, errorText, pickLanguage } = await load('translate.mjs');
 const { toBlocks, plainText, safeHref, cssColor } = await load('richtext.mjs');
-const { workoutSummary, restText, duration, positiveInt } = await load('format.mjs');
+const fmt = await load('format.mjs');
+const { workoutSummary, restText, duration, positiveInt } = fmt;
 const { pickVideoUrl } = await load('video.mjs');
 const sch = await load('schedule.mjs');
 const pv = await load('pickerValues.mjs');
@@ -239,4 +240,11 @@ test('drag-and-drop: moving rows and where they land', () => {
   assert.deepEqual([1, 2, 3].map((i) => ro2.shiftFor(i, 0, 2, 72)), [-72, -72, 0]);
   // dragging row 3 over row 1: rows 1 and 2 move down
   assert.deepEqual([0, 1, 2].map((i) => ro2.shiftFor(i, 3, 1, 72)), [0, 72, 72]);
+});
+
+test('number of workouts, with Romanian grammar', () => {
+  const { workoutCount } = fmt;
+  assert.deepEqual([0, 1, 2, 19].map((n) => workoutCount('en', n)), ['0 workouts', '1 workout', '2 workouts', '19 workouts']);
+  assert.deepEqual([0, 1, 5, 19, 20, 101, 120].map((n) => workoutCount('ro', n)),
+    ['0 exerciții', '1 exercițiu', '5 exerciții', '19 exerciții', '20 de exerciții', '101 exerciții', '120 de exerciții']);
 });

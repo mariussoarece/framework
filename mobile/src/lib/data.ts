@@ -75,6 +75,22 @@ export async function saveSectionOrder(ordered: Section[]): Promise<void> {
   }
 }
 
+// Number of workouts in each section: { sectionId: count }
+export async function sectionWorkoutCounts(): Promise<Record<string, number>> {
+  const rows = check(await supabase.from('section_workouts').select('section_id')) as { section_id: string }[];
+  const counts: Record<string, number> = {};
+  for (const r of rows) counts[r.section_id] = (counts[r.section_id] ?? 0) + 1;
+  return counts;
+}
+
+// Saves the order of the workouts inside one section (each section has its own order).
+export async function saveWorkoutOrder(sectionId: string, ordered: { id: string }[]): Promise<void> {
+  for (let i = 0; i < ordered.length; i += 1) {
+    check(await supabase.from('section_workouts').update({ position: i })
+      .eq('section_id', sectionId).eq('workout_id', ordered[i].id));
+  }
+}
+
 // ---------------------------------------------------------------- workouts
 export async function listSectionWorkouts(sectionId: string): Promise<Workout[]> {
   const rows = check(await supabase.from('section_workouts')
