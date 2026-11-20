@@ -154,6 +154,7 @@ export async function saveHome(orgId: string, home: {
   theme_key: string;
   background_media_id: string | null;
   foreground_media_id: string | null;
+  front_size: string;
   description: RichDoc | null;
 }, buttons: Pick<HomeButton, 'id' | 'label' | 'icon' | 'color'>[]): Promise<void> {
   check(await supabase.from('home_settings').update(home).eq('organization_id', orgId));

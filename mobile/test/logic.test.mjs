@@ -14,7 +14,7 @@ const ts = require(process.env.TS_PATH || 'typescript');
 
 // Compile the .ts modules we test into a temp folder as .mjs files.
 const out = mkdtempSync(join(tmpdir(), 'mobile-logic-'));
-for (const rel of ['src/i18n/en.ts', 'src/i18n/ro.ts', 'src/i18n/translate.ts', 'src/lib/richtext.ts', 'src/lib/format.ts', 'src/lib/video.ts', 'src/lib/schedule.ts', 'src/lib/pickerValues.ts', 'src/lib/reorder.ts', 'src/lib/mediaCache.ts', 'src/theme/themes.ts']) {
+for (const rel of ['src/i18n/en.ts', 'src/i18n/ro.ts', 'src/i18n/translate.ts', 'src/lib/richtext.ts', 'src/lib/format.ts', 'src/lib/video.ts', 'src/lib/schedule.ts', 'src/lib/pickerValues.ts', 'src/lib/reorder.ts', 'src/lib/mediaCache.ts', 'src/lib/frontImage.ts', 'src/theme/themes.ts']) {
   const src = readFileSync(join(here, '..', rel), 'utf8');
   const js = ts.transpileModule(src, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } })
     .outputText.replace(/from '(\.\.?\/[^']+)'/g, (_, p) => `from './${p.split('/').pop()}.mjs'`);
@@ -267,4 +267,24 @@ test('theme veil color and dark-theme detection', () => {
   assert.equal(th.isDarkTheme(th.themeFor('dojo')), true);
   assert.equal(th.isDarkTheme(th.themeFor('forest')), true);
   assert.equal(th.isDarkTheme(th.themeFor('calm')), false);
+});
+
+test('front image: three sizes, box keeps the picture shape', async () => {
+  const { frontBox, frontAspect, frontSize } = await load('frontImage.mjs');
+  assert.equal(frontSize('medium'), 'medium');
+  assert.equal(frontSize(null), 'large');
+  assert.equal(frontSize('huge'), 'large');
+  assert.equal(frontAspect(1000, 2000), 0.8);          // very tall: trimmed to 4:5
+  assert.equal(frontAspect(0, 0), 16 / 9);
+  // square picture on a 360 px page
+  assert.deepEqual(frontBox(360, 1, 'large'), { width: 360, height: 360 });
+  assert.deepEqual(frontBox(360, 1, 'medium'), { width: 288, height: 288 });
+  assert.deepEqual(frontBox(360, 1, 'small'), { width: 216, height: 216 });
+  // portrait 4:5: small is limited by the 220 height, like the first version
+  assert.deepEqual(frontBox(360, 0.8, 'small'), { width: 176, height: 220 });
+  assert.deepEqual(frontBox(360, 0.8, 'medium'), { width: 272, height: 340 });
+  assert.deepEqual(frontBox(360, 0.8, 'large'), { width: 360, height: 450 });
+  // wide picture: every size is a different width
+  const w = ['small', 'medium', 'large'].map((s) => frontBox(360, 16 / 9, s).width);
+  assert.ok(w[0] < w[1] && w[1] < w[2]);
 });

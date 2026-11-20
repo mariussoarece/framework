@@ -9,6 +9,7 @@ import { MediaImage } from '../src/components/MediaImage';
 import { RichText } from '../src/components/RichText';
 import { Loading, Message } from '../src/components/ui';
 import { useI18n } from '../src/i18n/I18nProvider';
+import { frontAspect, frontBox, frontSize } from '../src/lib/frontImage';
 import { useSession } from '../src/lib/session';
 import type { HomeButton } from '../src/lib/types';
 import { iconFor, themeFor } from '../src/theme/themes';
@@ -21,6 +22,7 @@ export default function Home() {
   const [mediaKey, setMediaKey] = React.useState(0);     // bump to fetch the images again
   // the front picture's width/height, so the box fits it exactly and the rounded corners are the picture's own
   const [frontRatio, setFrontRatio] = React.useState(16 / 9);
+  const [pageWidth, setPageWidth] = React.useState(0);   // width the front picture can use
   useFocusEffect(React.useCallback(() => { setMediaKey((k) => k + 1); }, []));
   const theme = themeFor(home?.theme_key);
 
@@ -70,10 +72,14 @@ export default function Home() {
           {paused ? <Message text={t('home.paused')} /> : null}
 
           {home?.foreground_media_id ? (
-            <MediaImage mediaId={home.foreground_media_id} refreshKey={mediaKey} contentFit="cover"
-              style={[styles.foreground, { aspectRatio: frontRatio }]}
-              onSize={(w, h) => { if (w > 0 && h > 0) setFrontRatio(frontAspect(w, h)); }}
-              label={org.name} />
+            <View onLayout={(e) => setPageWidth(e.nativeEvent.layout.width)} style={styles.frontRow}>
+              {pageWidth > 0 ? (
+                <MediaImage mediaId={home.foreground_media_id} refreshKey={mediaKey} contentFit="cover"
+                  style={[styles.foreground, frontBox(pageWidth, frontRatio, frontSize(home.front_size))]}
+                  onSize={(w, h) => setFrontRatio(frontAspect(w, h))}
+                  label={org.name} />
+              ) : null}
+            </View>
           ) : null}
 
           {home?.description ? (
@@ -103,7 +109,8 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   orgName: { flex: 1, fontSize: 30, fontWeight: '800' },
   gear: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
-  foreground: { width: '100%', borderRadius: 16, overflow: 'hidden' },
+  frontRow: { width: '100%', alignItems: 'center' },
+  foreground: { borderRadius: 16, overflow: 'hidden' },
   card: { borderRadius: 16, padding: 18 },
   buttons: { gap: 14, marginTop: 4 },
   bigButton: {
@@ -111,8 +118,3 @@ const styles = StyleSheet.create({
   },
   bigButtonText: { flex: 1, color: '#FFFFFF', fontSize: 20, fontWeight: '700' },
 });
-
-// Very tall pictures are trimmed a little (to 4:5) so they don't push everything off the screen.
-function frontAspect(width: number, height: number): number {
-  return Math.max(width / height, 0.8);
-}

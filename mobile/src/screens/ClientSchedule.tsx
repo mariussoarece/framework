@@ -7,6 +7,7 @@ import { useFocusEffect } from 'expo-router';
 import { Message, Muted, Tabs } from '../components/ui';
 import { Ionicons } from '@expo/vector-icons';
 import { BookingCard } from './BookingCard';
+import { WeekRange } from '../components/WeekRange';
 import { WeekView } from './WeekView';
 import { useI18n } from '../i18n/I18nProvider';
 import { cancelBooking, freeSlots, listBookings, requestBooking, type Booking, type FreeSlot } from '../lib/data';
@@ -119,9 +120,7 @@ export function ClientSchedule({ theme }: { theme: Theme }) {
                 accessibilityRole="button" accessibilityLabel={t('schedule.prevWeek')}>
                 <Ionicons name="chevron-back" size={26} color={week <= thisWeek ? theme.border : theme.primary} />
               </Pressable>
-              <Text style={[styles.range, { color: theme.text }]}>
-                {dayLabel(week, language)} – {dayLabel(addDays(week, 6), language)}
-              </Text>
+              <WeekRange from={dayLabel(week, language)} to={dayLabel(addDays(week, 6), language)} theme={theme} />
               <Pressable onPress={() => setWeek(addDays(week, 7))} disabled={week >= addDays(thisWeek, 7 * MAX_WEEKS_AHEAD)}
                 hitSlop={10} accessibilityRole="button" accessibilityLabel={t('schedule.nextWeek')}>
                 <Ionicons name="chevron-forward" size={26} color={theme.primary} />
@@ -200,7 +199,6 @@ export function ClientSchedule({ theme }: { theme: Theme }) {
 const styles = StyleSheet.create({
   content: { padding: 20, gap: 14, paddingBottom: 40 },
   nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  range: { flex: 1, textAlign: 'center', fontSize: 15, fontWeight: '700', textTransform: 'capitalize' },
   day: { borderRadius: 16, borderWidth: 1, padding: 14, gap: 10 },
   dayTitle: { fontSize: 17, fontWeight: '700', textTransform: 'capitalize' },
   slots: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },

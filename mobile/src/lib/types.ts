@@ -29,6 +29,7 @@ export type HomeSettings = {
   theme_key: string;
   background_media_id: string | null;
   foreground_media_id: string | null;
+  front_size?: string | null;          // 'small' | 'medium' | 'large' (migration 010)
   description: RichDoc | null;
 };
 

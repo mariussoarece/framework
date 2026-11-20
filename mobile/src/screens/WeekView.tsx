@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Message, Muted } from '../components/ui';
+import { WeekRange } from '../components/WeekRange';
 import { useI18n } from '../i18n/I18nProvider';
 import { weekOverview, type WeekEntry } from '../lib/data';
 import { addDays, dayLabel, shortTime, today, weekStart } from '../lib/schedule';
@@ -27,7 +28,6 @@ export function WeekView({ theme, tz, reloadKey }: { theme: Theme; tz: string; r
   useEffect(() => { load(); }, [load, reloadKey]);
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
-  const range = `${dayLabel(days[0], language)} – ${dayLabel(days[6], language)}`;
   const thisWeek = weekStart(today(tz));
 
   return (
@@ -37,7 +37,7 @@ export function WeekView({ theme, tz, reloadKey }: { theme: Theme; tz: string; r
           accessibilityRole="button" accessibilityLabel={t('schedule.prevWeek')}>
           <Ionicons name="chevron-back" size={26} color={start <= thisWeek ? theme.border : theme.primary} />
         </Pressable>
-        <Text style={[styles.range, { color: theme.text }]}>{range}</Text>
+        <WeekRange from={dayLabel(days[0], language)} to={dayLabel(days[6], language)} theme={theme} />
         <Pressable onPress={() => setStart(addDays(start, 7))} hitSlop={10}
           accessibilityRole="button" accessibilityLabel={t('schedule.nextWeek')}>
           <Ionicons name="chevron-forward" size={26} color={theme.primary} />
@@ -82,7 +82,6 @@ export function WeekView({ theme, tz, reloadKey }: { theme: Theme; tz: string; r
 
 const styles = StyleSheet.create({
   nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  range: { flex: 1, textAlign: 'center', fontSize: 15, fontWeight: '700', textTransform: 'capitalize' },
   day: { borderRadius: 16, borderWidth: 1, padding: 14, gap: 8 },
   dayTitle: { fontSize: 17, fontWeight: '700', textTransform: 'capitalize' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8 },

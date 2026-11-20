@@ -3,11 +3,12 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Button, Message, Muted, Screen } from '../src/components/ui';
+import { Button, Message, Muted, Screen, Tabs } from '../src/components/ui';
 import { pickMedia, Thumb } from '../src/components/media';
 import { RichEditor, editorDoc, useRichEditor } from '../src/components/RichEditor';
 import { useI18n } from '../src/i18n/I18nProvider';
 import { deleteMedia, mediaStatus, saveHome } from '../src/lib/data';
+import { FRONT_SIZES, frontSize, type FrontSize } from '../src/lib/frontImage';
 import { useSession } from '../src/lib/session';
 import { uploadAsset, type MediaRow, type PickedAsset } from '../src/lib/upload';
 import type { HomeButton } from '../src/lib/types';
@@ -23,6 +24,7 @@ export default function EditHome() {
   const [themeKey, setThemeKey] = useState(home?.theme_key ?? DEFAULT_THEME.key);
   const [bg, setBg] = useState<ImageSlot>({ mediaId: home?.background_media_id ?? null, picked: null });
   const [fg, setFg] = useState<ImageSlot>({ mediaId: home?.foreground_media_id ?? null, picked: null });
+  const [fgSize, setFgSize] = useState<FrontSize>(frontSize(home?.front_size));
   const [btns, setBtns] = useState<HomeButton[]>(buttons);
   const [statuses, setStatuses] = useState<Record<string, MediaRow>>({});
   const [busy, setBusy] = useState(false);
@@ -69,6 +71,7 @@ export default function EditHome() {
         theme_key: themeKey,
         background_media_id: bgId,
         foreground_media_id: fgId,
+        front_size: fgSize,
         description: await editorDoc(editor),
       }, btns.map((b) => ({ ...b, label: b.label.trim() || (b.type === 'scheduling' ? 'Scheduling' : 'Workout Maintenance') })));
       // images that were replaced or removed: delete them (and their files)
@@ -122,6 +125,13 @@ export default function EditHome() {
 
       <ImageField label={t('edit.background')} slot={bg} set={setBg} />
       <ImageField label={t('edit.foreground')} hint={t('edit.foregroundHint')} slot={fg} set={setFg} />
+      {fg.mediaId || fg.picked ? (
+        <View style={{ gap: 8 }}>
+          <Text style={styles.label}>{t('edit.frontSize')}</Text>
+          <Tabs theme={theme} value={fgSize} onChange={setFgSize}
+            tabs={FRONT_SIZES.map((k) => ({ key: k, label: t(`edit.frontSize.${k}` as never) }))} />
+        </View>
+      ) : null}
       <Muted>{t('media.approvalNote')}</Muted>
 
       <Text style={styles.label}>{t('edit.description')}</Text>
