@@ -8,6 +8,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
 import { mediaLinks, type MediaLinks } from '../lib/api';
 import { pickVideoUrl } from '../lib/video';
+import { ImageViewer } from './ImageViewer';
 import type { PickedAsset } from '../lib/upload';
 import type { VideoQuality } from '../lib/types';
 import type { Theme } from '../theme/themes';
@@ -61,8 +62,9 @@ function useCellular(): boolean {
 }
 
 // One published picture or video, fetched through a signed link.
-export function MediaItem({ mediaId, quality, theme, width }: {
+export function MediaItem({ mediaId, quality, theme, width, onOpenImage }: {
   mediaId: string; quality: VideoQuality; theme: Theme; width: number;
+  onOpenImage?: (id: string) => void;     // tap a picture: show it full screen
 }) {
   const [links, setLinks] = useState<MediaLinks | null>(null);
   const [failed, setFailed] = useState(false);
@@ -83,25 +85,38 @@ export function MediaItem({ mediaId, quality, theme, width }: {
     const url = pickVideoUrl(links, quality, cellular);
     return url ? <VideoPlayer uri={url} style={[styles.media, box]} /> : null;
   }
-  return links.image
-    ? <Image source={{ uri: links.image.url, cacheKey: `media-${mediaId}` }} style={[styles.media, box]} contentFit="contain" />
-    : null;
+  if (!links.image) return null;
+  const picture = <Image source={{ uri: links.image.url, cacheKey: `media-${mediaId}` }} style={[styles.media, box]} contentFit="contain" />;
+  return onOpenImage ? (
+    <Pressable onPress={() => onOpenImage(mediaId)} accessibilityRole="imagebutton">
+      {picture}
+      <View style={styles.expand} pointerEvents="none">
+        <Ionicons name="expand-outline" size={18} color="#FFFFFF" />
+      </View>
+    </Pressable>
+  ) : picture;
 }
 
 export function MediaGallery({ ids, quality, theme }: { ids: string[]; quality: VideoQuality; theme: Theme }) {
   const width = Dimensions.get('window').width - 40;
+  const [fullId, setFullId] = useState<string | null>(null);   // picture shown full screen
   if (!ids.length) return null;
-  if (ids.length === 1) return <MediaItem mediaId={ids[0]} quality={quality} theme={theme} width={width} />;
+  const item = (id: string) => <MediaItem mediaId={id} quality={quality} theme={theme} width={width} onOpenImage={setFullId} />;
   return (
-    <FlatList
-      data={ids}
-      horizontal
-      pagingEnabled
-      showsHorizontalScrollIndicator
-      keyExtractor={(id) => id}
-      renderItem={({ item }) => <MediaItem mediaId={item} quality={quality} theme={theme} width={width} />}
-      ItemSeparatorComponent={() => <View style={{ width: 0 }} />}
-    />
+    <>
+      {ids.length === 1 ? item(ids[0]) : (
+        <FlatList
+          data={ids}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator
+          keyExtractor={(id) => id}
+          renderItem={({ item: id }) => item(id)}
+          ItemSeparatorComponent={() => <View style={{ width: 0 }} />}
+        />
+      )}
+      <ImageViewer ids={ids} startId={fullId} onClose={() => setFullId(null)} />
+    </>
   );
 }
 
@@ -148,6 +163,10 @@ const styles = StyleSheet.create({
   media: { width: '100%', aspectRatio: 4 / 3, borderRadius: 14, backgroundColor: '#000000' },
   placeholder: {
     alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderStyle: 'dashed', gap: 6, padding: 8,
+  },
+  expand: {
+    position: 'absolute', right: 10, bottom: 10, width: 32, height: 32, borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center',
   },
   thumbWrap: { width: 96, gap: 4 },
   thumb: { width: 96, height: 96, borderRadius: 10 },

@@ -1,6 +1,7 @@
 // English texts. ro.ts must have exactly the same keys (checked by test/i18n.test.mjs).
 export const en = {
   'common.continue': 'Continue',
+  'common.close': 'Close',
   'common.cancel': 'Cancel',
   'common.delete': 'Delete',
   'common.back': 'Back',

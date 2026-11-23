@@ -3,6 +3,7 @@ import type { TextKey } from './en';
 // Romanian texts.
 export const ro: Record<TextKey, string> = {
   'common.continue': 'Continuă',
+  'common.close': 'Închide',
   'common.cancel': 'Anulează',
   'common.delete': 'Șterge',
   'common.back': 'Înapoi',
