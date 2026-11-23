@@ -43,22 +43,13 @@ export type MediaLinks = {
 // otherwise an image approved later would never appear (bug before).
 const linkCache = new Map<string, MediaLinks>();
 
-const inFlight = new Map<string, Promise<MediaLinks>>();   // one request per picture/video at a time
-
 export async function mediaLinks(id: string, fresh = false): Promise<MediaLinks> {
   const cached = linkCache.get(id);
   if (!fresh && cacheUsable(cached, Date.now())) return cached!;
-  const running = inFlight.get(id);
-  if (running) return running;
-  const request = call<MediaLinks>('GET', `/api/media/${encodeURIComponent(id)}/url`)
-    .then((links) => {
-      if (links.status === 'published') linkCache.set(id, links);
-      else linkCache.delete(id);
-      return links;
-    })
-    .finally(() => inFlight.delete(id));
-  inFlight.set(id, request);
-  return request;
+  const links = await call<MediaLinks>('GET', `/api/media/${encodeURIComponent(id)}/url`);
+  if (links.status === 'published') linkCache.set(id, links);
+  else linkCache.delete(id);
+  return links;
 }
 
 export const api = {
