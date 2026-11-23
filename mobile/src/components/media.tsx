@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { mediaLinks, type MediaLinks } from '../lib/api';
 import { pickVideoUrl } from '../lib/video';
 import { ImageViewer } from './ImageViewer';
+import { MediaImage } from './MediaImage';
 import type { PickedAsset } from '../lib/upload';
 import type { VideoQuality } from '../lib/types';
 import type { Theme } from '../theme/themes';
@@ -133,20 +134,25 @@ export function PendingTile({ status, theme, style, label }: {
   );
 }
 
-// Small square used in edit forms: local picks, existing media, remove button.
-export function Thumb({ uri, kind, status, statusLabel, onRemove, theme }: {
-  uri?: string | null; kind: 'image' | 'video'; status?: string; statusLabel?: string;
-  onRemove?: () => void; theme: Theme;
+// Small square used in edit forms: local picks, existing media, remove button,
+// arrows to change the order, and a badge on the picture used in the workout list.
+export function Thumb({ uri, mediaId, kind, status, statusLabel, onRemove, onLeft, onRight, listLabel, theme }: {
+  uri?: string | null; mediaId?: string; kind: 'image' | 'video'; status?: string; statusLabel?: string;
+  onRemove?: () => void; onLeft?: () => void; onRight?: () => void; listLabel?: string; theme: Theme;
 }) {
+  const showSaved = !uri && mediaId && kind === 'image' && status === 'published';
   return (
     <View style={styles.thumbWrap}>
       {uri && kind === 'image'
         ? <Image source={{ uri }} style={styles.thumb} contentFit="cover" />
-        : (
-          <View style={[styles.thumb, styles.placeholder, { borderColor: theme.border }]}>
-            <Ionicons name={kind === 'video' ? 'videocam-outline' : 'image-outline'} size={26} color={theme.muted} />
-          </View>
-        )}
+        : showSaved
+          ? <MediaImage mediaId={mediaId} style={styles.thumb} />
+          : (
+            <View style={[styles.thumb, styles.placeholder, { borderColor: theme.border }]}>
+              <Ionicons name={kind === 'video' ? 'videocam-outline' : 'image-outline'} size={26} color={theme.muted} />
+            </View>
+          )}
+      {listLabel ? <Text style={styles.badgeList} numberOfLines={2}>{listLabel}</Text> : null}
       {statusLabel ? (
         <Text style={[styles.badge, status === 'rejected' ? styles.badgeBad : null]} numberOfLines={2}>{statusLabel}</Text>
       ) : null}
@@ -154,6 +160,18 @@ export function Thumb({ uri, kind, status, statusLabel, onRemove, theme }: {
         <Pressable onPress={onRemove} hitSlop={8} style={styles.remove} accessibilityRole="button" accessibilityLabel="remove">
           <Ionicons name="close" size={16} color="#FFFFFF" />
         </Pressable>
+      ) : null}
+      {onLeft || onRight ? (
+        <View style={styles.arrows}>
+          <Pressable onPress={onLeft} disabled={!onLeft} hitSlop={6} accessibilityRole="button" accessibilityLabel="move left"
+            style={[styles.arrow, { borderColor: theme.border, opacity: onLeft ? 1 : 0.3 }]}>
+            <Ionicons name="chevron-back" size={18} color={theme.text} />
+          </Pressable>
+          <Pressable onPress={onRight} disabled={!onRight} hitSlop={6} accessibilityRole="button" accessibilityLabel="move right"
+            style={[styles.arrow, { borderColor: theme.border, opacity: onRight ? 1 : 0.3 }]}>
+            <Ionicons name="chevron-forward" size={18} color={theme.text} />
+          </Pressable>
+        </View>
       ) : null}
     </View>
   );
@@ -172,6 +190,9 @@ const styles = StyleSheet.create({
   thumb: { width: 96, height: 96, borderRadius: 10 },
   badge: { fontSize: 11, color: '#6F5B00', backgroundColor: '#FFF3C4', borderRadius: 6, paddingHorizontal: 4, overflow: 'hidden' },
   badgeBad: { color: '#8C1D18', backgroundColor: '#FDECEA' },
+  badgeList: { fontSize: 11, color: '#1B5E20', backgroundColor: '#E3F2E1', borderRadius: 6, paddingHorizontal: 4, overflow: 'hidden' },
+  arrows: { flexDirection: 'row', justifyContent: 'space-between' },
+  arrow: { width: 44, height: 30, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   remove: {
     position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: 12,
     backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center',

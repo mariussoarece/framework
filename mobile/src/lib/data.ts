@@ -157,6 +157,13 @@ export async function saveWorkout(orgId: string, id: string | null, input: Worko
   return w;
 }
 
+// Order of a workout's pictures/videos; the first approved picture is the one shown in the list.
+export async function saveWorkoutMediaOrder(workoutId: string, mediaIds: string[]): Promise<void> {
+  await Promise.all(mediaIds.map(async (mediaId, i) => {
+    check(await supabase.from('workout_media').update({ position: i }).eq('workout_id', workoutId).eq('media_id', mediaId));
+  }));
+}
+
 export async function deleteWorkout(id: string): Promise<void> {
   const media = await workoutMedia(id);
   check(await supabase.from('workouts').delete().eq('id', id));

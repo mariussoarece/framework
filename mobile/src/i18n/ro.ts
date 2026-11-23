@@ -98,6 +98,8 @@ export const ro: Record<TextKey, string> = {
   'media.rejected': "Neaprobat",
   'media.approvalNote': "Fotografiile și videoclipurile noi devin vizibile pentru clienți după aprobare.",
   'media.uploading': "Se încarcă {current} din {total} ({percent}%)",
+  'media.listPicture': "Imagine în listă",
+  'media.orderHint': "Folosește săgețile ca să schimbi ordinea. Prima imagine apare în lista de exerciții.",
   'media.add': "Adaugă fotografii sau videoclipuri",
   'media.permission': "Permite accesul la fotografii pentru a adăuga imagini și videoclipuri.",
   'sections.empty': "Încă nu există secțiuni.",

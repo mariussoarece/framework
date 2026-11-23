@@ -9,12 +9,13 @@ import { pickMedia, Thumb } from '../src/components/media';
 import { RichEditor, editorDoc, useRichEditor } from '../src/components/RichEditor';
 import { useI18n } from '../src/i18n/I18nProvider';
 import {
-  deleteMedia, deleteWorkout, getWorkout, listSections, saveWorkout, workoutMedia, workoutSectionIds,
+  deleteMedia, deleteWorkout, getWorkout, listSections, saveWorkout, saveWorkoutMediaOrder, workoutMedia, workoutSectionIds,
   type Section, type Workout,
 } from '../src/lib/data';
 import { positiveInt } from '../src/lib/format';
 import { useSession } from '../src/lib/session';
 import { uploadAsset, type MediaRow, type PickedAsset } from '../src/lib/upload';
+import { moveItem } from '../src/lib/reorder';
 import type { RichDoc } from '../src/lib/types';
 import { themeFor } from '../src/theme/themes';
 
@@ -41,7 +42,8 @@ export default function WorkoutEdit() {
   const [chosen, setChosen] = useState<string[]>(section ? [section] : []);
   const [existing, setExisting] = useState<MediaRow[]>([]);
   const [removed, setRemoved] = useState<string[]>([]);
-  const [picked, setPicked] = useState<PickedAsset[]>([]);
+  const [picked, setPicked] = useState<Picked[]>([]);
+  const [order, setOrder] = useState<string[]>([]);   // keys of existing (media id) and new (new-…) items, in order
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +64,9 @@ export default function WorkoutEdit() {
         setAvoid(w.avoid ?? '');
         setInitialDoc(w.description);
         setChosen(await workoutSectionIds(id));
-        setExisting(await workoutMedia(id));
+        const media = await workoutMedia(id);
+        setExisting(media);
+        setOrder(media.map((m) => m.id));
       } catch (err) {
         setError(tError(err));
       } finally {
@@ -78,10 +82,13 @@ export default function WorkoutEdit() {
     <Form
       {...{ id, org: org.id, theme, t, tError, name, setName, sets, setSets, mode, setMode, reps, setReps, time, setTime,
         rest, setRest, warning, setWarning, avoid, setAvoid, sections, chosen, setChosen, existing, removed, setRemoved,
-        picked, setPicked, busy, setBusy, progress, setProgress, error, setError, initialDoc }}
+        picked, setPicked, order, setOrder, busy, setBusy, progress, setProgress, error, setError, initialDoc }}
     />
   );
 }
+
+type Picked = PickedAsset & { key: string };   // a new picture/video, not uploaded yet
+type Item = { key: string; existing?: MediaRow; picked?: Picked };
 
 type FormProps = {
   id?: string; org: string; theme: ReturnType<typeof themeFor>;
@@ -92,7 +99,8 @@ type FormProps = {
   warning: string; setWarning: (v: string) => void; avoid: string; setAvoid: (v: string) => void;
   sections: Section[]; chosen: string[]; setChosen: (v: string[]) => void;
   existing: MediaRow[]; removed: string[]; setRemoved: (v: string[]) => void;
-  picked: PickedAsset[]; setPicked: (v: PickedAsset[]) => void;
+  picked: Picked[]; setPicked: (v: Picked[]) => void;
+  order: string[]; setOrder: (v: string[]) => void;
   busy: boolean; setBusy: (v: boolean) => void; progress: string | null; setProgress: (v: string | null) => void;
   error: string | null; setError: (v: string | null) => void; initialDoc: RichDoc | null;
 };
@@ -105,9 +113,28 @@ function Form(p: FormProps) {
     m.status === 'pending' || m.status === 'approved' ? t('media.pending')
       : m.status === 'rejected' ? t('media.rejected') : undefined;
 
+  // pictures/videos in the chosen order (removed ones left out)
+  const items: Item[] = p.order.flatMap((key): Item[] => {
+    const ex = p.existing.find((m) => m.id === key);
+    if (ex) return p.removed.includes(key) ? [] : [{ key, existing: ex }];
+    const pk = p.picked.find((a) => a.key === key);
+    return pk ? [{ key, picked: pk }] : [];
+  });
+  const listPictureKey = items.find((x) => (x.existing ?? x.picked)!.kind === 'image')?.key;
+  const move = (i: number, to: number) => p.setOrder(moveItem(items.map((x) => x.key), i, to));
+  function removeItem(key: string) {
+    if (p.existing.some((m) => m.id === key)) p.setRemoved([...p.removed, key]);
+    else p.setPicked(p.picked.filter((a) => a.key !== key));
+    p.setOrder(p.order.filter((k) => k !== key));
+  }
+
   async function addMedia() {
     const assets = await pickMedia({ allowVideo: true, multiple: true, permissionText: t('media.permission') });
-    if (assets.length) p.setPicked([...p.picked, ...assets]);
+    if (!assets.length) return;
+    const stamp = Date.now();
+    const added = assets.map((a, i) => ({ ...a, key: `new-${stamp}-${i}` }));
+    p.setPicked([...p.picked, ...added]);
+    p.setOrder([...p.order, ...added.map((a) => a.key)]);
   }
 
   function toggleSection(sid: string) {
@@ -141,14 +168,20 @@ function Form(p: FormProps) {
       const w = await saveWorkout(p.org, p.id ?? null, input, p.chosen);
 
       if (p.removed.length) await deleteMedia(p.removed);
-      for (let i = 0; i < p.picked.length; i += 1) {
-        await uploadAsset(p.picked[i], {
+      const uploads = items.filter((x) => x.picked);
+      const idOf: Record<string, string> = {};
+      for (let i = 0; i < uploads.length; i += 1) {
+        const row = await uploadAsset(uploads[i].picked!, {
           workoutId: w.id,
           onProgress: (f) => p.setProgress(t('media.uploading', {
-            current: i + 1, total: p.picked.length, percent: Math.round(f * 100),
+            current: i + 1, total: uploads.length, percent: Math.round(f * 100),
           })),
         });
+        idOf[uploads[i].key] = row.id;
       }
+      // keep the order chosen with the arrows
+      const ids = items.map((x) => (x.picked ? idOf[x.key] : x.key)).filter(Boolean);
+      if (ids.length) await saveWorkoutMediaOrder(w.id, ids);
       router.back();
     } catch (err) {
       p.setError(p.tError(err));
@@ -182,7 +215,6 @@ function Form(p: FormProps) {
     </View>
   );
 
-  const shownExisting = p.existing.filter((m) => !p.removed.includes(m.id));
 
   return (
     <Screen header theme={theme}>
@@ -219,17 +251,19 @@ function Form(p: FormProps) {
 
       <Text style={[styles.label, { color: theme.text }]}>{t('workout.media')}</Text>
       <View style={styles.thumbs}>
-        {shownExisting.map((m) => (
-          <Thumb key={m.id} kind={m.kind} theme={theme} status={m.status} statusLabel={statusLabel(m)}
-            onRemove={() => p.setRemoved([...p.removed, m.id])} />
-        ))}
-        {p.picked.map((a, i) => (
-          <Thumb key={`${a.uri}-${i}`} uri={a.uri} kind={a.kind} theme={theme}
-            onRemove={() => p.setPicked(p.picked.filter((_, j) => j !== i))} />
+        {items.map((x, i) => (
+          <Thumb key={x.key} theme={theme}
+            uri={x.picked?.uri} mediaId={x.existing?.id} kind={(x.existing ?? x.picked)!.kind}
+            status={x.existing?.status} statusLabel={x.existing ? statusLabel(x.existing) : undefined}
+            listLabel={x.key === listPictureKey ? t('media.listPicture') : undefined}
+            onLeft={i > 0 ? () => move(i, i - 1) : undefined}
+            onRight={i < items.length - 1 ? () => move(i, i + 1) : undefined}
+            onRemove={() => removeItem(x.key)} />
         ))}
       </View>
       <Button theme={theme} kind="secondary" label={t('media.add')} onPress={addMedia} disabled={p.busy} />
       <Muted theme={theme}>{t('media.approvalNote')}</Muted>
+      {items.length > 1 ? <Muted theme={theme}>{t('media.orderHint')}</Muted> : null}
 
       <Field theme={theme} label={t('workout.avoid')} hint={t('workout.avoidHint')} value={p.avoid}
         onChangeText={p.setAvoid} multiline maxLength={1000} />

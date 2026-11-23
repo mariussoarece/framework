@@ -96,6 +96,8 @@ export const en = {
   'media.rejected': "Not approved",
   'media.approvalNote': "New pictures and videos become visible to clients after approval.",
   'media.uploading': "Uploading {current} of {total} ({percent}%)",
+  'media.listPicture': "List picture",
+  'media.orderHint': "Use the arrows to change the order. The first picture is shown in the workout list.",
   'media.add': "Add pictures or videos",
   'media.permission': "Allow access to your photos to add pictures and videos.",
   'sections.empty': "No sections yet.",
