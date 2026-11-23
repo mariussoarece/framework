@@ -1,10 +1,10 @@
 // Full-screen pictures: black background, swipe left/right between the workout's pictures,
-// pinch to zoom (iPhone), tap ✕ to close.
+// pinch to zoom (iPhone), tap ✕ or the picture to close (Android: also the back button).
 import React, { useEffect, useState } from 'react';
 import { Dimensions, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { mediaLinks } from '../lib/api';
 import { useI18n } from '../i18n/I18nProvider';
 
@@ -19,6 +19,9 @@ export function ImageViewer({ ids, startId, onClose }: {
   const [pics, setPics] = useState<Pic[]>([]);
   const [index, setIndex] = useState(0);
   const { width, height } = Dimensions.get('window');
+  // read here, outside the Modal: inside it the safe area is reported as 0 on iPhone,
+  // which put the ✕ under the clock/battery where it can't be tapped
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (!startId) { setPics([]); return; }   // closed: next opening starts at the tapped picture
@@ -51,17 +54,20 @@ export function ImageViewer({ ids, startId, onClose }: {
             <ScrollView style={{ width, height }} contentContainerStyle={styles.center}
               maximumZoomScale={4} minimumZoomScale={1} centerContent
               showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false}>
-              <Image source={{ uri: item.url, cacheKey: `media-${item.id}` }} style={{ width, height }} contentFit="contain" />
+              {/* a single tap on the picture also closes it */}
+              <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={t('common.close')}>
+                <Image source={{ uri: item.url, cacheKey: `media-${item.id}` }} style={{ width, height }} contentFit="contain" />
+              </Pressable>
             </ScrollView>
           )}
         />
-        <SafeAreaView style={styles.top} pointerEvents="box-none">
+        <View style={[styles.top, { top: insets.top + 8 }]} pointerEvents="box-none">
           {pics.length > 1 ? <Text style={styles.count}>{index + 1} / {pics.length}</Text> : <View />}
           <Pressable onPress={onClose} hitSlop={12} accessibilityRole="button" accessibilityLabel={t('common.close')}
             style={styles.close}>
             <Ionicons name="close" size={28} color="#FFFFFF" />
           </Pressable>
-        </SafeAreaView>
+        </View>
       </View>
     </Modal>
   );
@@ -71,12 +77,12 @@ const styles = StyleSheet.create({
   back: { flex: 1, backgroundColor: '#000000' },
   center: { flexGrow: 1, alignItems: 'center', justifyContent: 'center' },
   top: {
-    position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row',
+    position: 'absolute', left: 0, right: 0, flexDirection: 'row',
     justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16,
   },
-  count: { color: '#FFFFFF', fontSize: 16, fontWeight: '600', marginTop: 8 },
+  count: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
   close: {
-    marginTop: 8, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center',
+    width: 48, height: 48, borderRadius: 22, alignItems: 'center', justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.15)',
   },
 });
