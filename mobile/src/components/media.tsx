@@ -41,7 +41,12 @@ export async function pickMedia(opts: {
 export function VideoPlayer({ uri, headers, style }: {
   uri: string; headers?: Record<string, string>; style?: object;
 }) {
-  const player = useVideoPlayer({ uri, headers }, (p) => { p.loop = false; });
+  const player = useVideoPlayer({ uri, headers, contentType: 'progressive' }, (p) => {
+    p.loop = false;
+    // start as soon as a little is downloaded, instead of waiting for a bigger safety buffer
+    // (iOS: don't wait "to minimize stalling"; Android: 1 s instead of 2 s)
+    p.bufferOptions = { ...p.bufferOptions, waitsToMinimizeStalling: false, minBufferForPlayback: 1 };
+  });
   return <VideoView player={player} style={style ?? styles.media} nativeControls allowsFullscreen contentFit="contain" />;
 }
 

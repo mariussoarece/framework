@@ -1,7 +1,7 @@
 // A workout: pictures/videos on top, then sets, repetitions or time, rest, description,
 // what to avoid and the warning. The owner gets an Edit button.
 import { ScreenBackground } from '../../src/components/ScreenBackground';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,7 +9,8 @@ import { MediaGallery } from '../../src/components/media';
 import { RichText } from '../../src/components/RichText';
 import { Loading, Message } from '../../src/components/ui';
 import { useI18n } from '../../src/i18n/I18nProvider';
-import { getWorkout, workoutMedia, type Workout } from '../../src/lib/data';
+import type { Workout } from '../../src/lib/data';
+import { loadWorkoutPage } from '../../src/lib/workoutPage';
 import { restText, workoutSummary } from '../../src/lib/format';
 import { useSession } from '../../src/lib/session';
 import type { MediaRow } from '../../src/lib/upload';
@@ -25,11 +26,15 @@ export default function WorkoutScreen() {
   const [w, setW] = useState<Workout | null>(null);
   const [media, setMedia] = useState<MediaRow[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const loadedOnce = useRef(false);
 
   useFocusEffect(useCallback(() => {
     (async () => {
       try {
-        const [workout, m] = await Promise.all([getWorkout(id), workoutMedia(id)]);   // both at once
+        // reuses the load started when the workout was touched in the list (if any)
+        // first visit: reuse it; coming back (e.g. after Edit): fetch fresh
+        const { workout, media: m } = await loadWorkoutPage(id, loadedOnce.current);
+        loadedOnce.current = true;
         setW(workout);
         setMedia(m);
         navigation.setOptions({
