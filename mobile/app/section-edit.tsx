@@ -53,7 +53,9 @@ export default function SectionEdit() {
       if (originalCover && originalCover !== cover) await deleteMedia([originalCover]).catch(() => {});
       router.back();
     } catch (err) {
-      setError(tError(err));
+      const message = tError(err);
+      setError(message);
+      Alert.alert(t('save.notSaved'), message);
     } finally {
       setBusy(false);
     }

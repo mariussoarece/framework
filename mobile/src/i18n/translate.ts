@@ -60,6 +60,12 @@ export function errorText(language: Language, err: unknown): string {
     'invalid login credentials': 'error.invalid_credentials',
     'email not confirmed': 'error.email_not_confirmed',
     'user already registered': 'error.user_already_exists',
+    file_too_large: 'error.file_too_large',
+    http_413: 'error.file_too_large',
+    body_too_large: 'error.file_too_large',
+    unsupported_type: 'error.unsupported_type',
+    empty_file: 'error.empty_file',
+    upload_cancelled: 'error.upload_failed',
     'network request failed': 'error.network',
     'failed to fetch': 'error.network',
   };

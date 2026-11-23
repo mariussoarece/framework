@@ -305,6 +305,12 @@ export const en = {
   'error.already_reported': "You already reported this. The administrator is looking at it.",
   'error.day_off': "This whole day is a day off. Remove it under Whole days off to block single sessions.",
   'error.slot_not_found': "This session no longer exists. Pull down to refresh.",
+  'error.file_too_large': "This file is too big. Videos can be up to 500 MB, pictures up to 20 MB.",
+  'error.unsupported_type': "This kind of file can't be used. Choose a photo or a video from your gallery.",
+  'error.empty_file': "The file is empty. Choose it again.",
+  'error.upload_failed': "The upload was interrupted. Check your internet and try again.",
+  'save.notSaved': "Not saved",
+  'save.mediaFailed': "The workout was saved, but {count} picture(s)/video(s) could not be uploaded:\n{reason}\n\nOpen the workout and add them again.",
   'error.network': 'No connection to the server. Check your internet and try again.',
 } as const;
 

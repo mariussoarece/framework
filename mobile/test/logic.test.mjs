@@ -288,3 +288,10 @@ test('front image: three sizes, box keeps the picture shape', async () => {
   const w = ['small', 'medium', 'large'].map((s) => frontBox(360, 16 / 9, s).width);
   assert.ok(w[0] < w[1] && w[1] < w[2]);
 });
+
+test('upload errors have friendly texts', () => {
+  assert.match(errorText('en', new Error('file_too_large')), /too big/);
+  assert.match(errorText('en', new Error('http_413')), /too big/);
+  assert.match(errorText('ro', new Error('unsupported_type')), /tip de fișier/);
+  assert.match(errorText('en', new Error('upload_cancelled')), /interrupted/);
+});

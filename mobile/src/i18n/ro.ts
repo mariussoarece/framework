@@ -307,5 +307,11 @@ export const ro: Record<TextKey, string> = {
   'error.already_reported': "Ai raportat deja acest conținut. Administratorul îl verifică.",
   'error.day_off': "Această zi este liberă în întregime. Elimin-o din Zile libere întregi ca să blochezi ședințe separate.",
   'error.slot_not_found': "Această ședință nu mai există. Trage în jos pentru a reîmprospăta.",
+  'error.file_too_large': "Fișierul e prea mare. Videoclipurile pot avea cel mult 500 MB, imaginile cel mult 20 MB.",
+  'error.unsupported_type': "Acest tip de fișier nu poate fi folosit. Alege o fotografie sau un video din galerie.",
+  'error.empty_file': "Fișierul e gol. Alege-l din nou.",
+  'error.upload_failed': "Încărcarea s-a întrerupt. Verifică internetul și încearcă din nou.",
+  'save.notSaved': "Nu s-a salvat",
+  'save.mediaFailed': "Exercițiul a fost salvat, dar {count} imagine/imagini sau video(uri) nu s-au putut încărca:\n{reason}\n\nDeschide exercițiul și adaugă-le din nou.",
   'error.network': 'Nu există conexiune la server. Verifică internetul și încearcă din nou.',
 };

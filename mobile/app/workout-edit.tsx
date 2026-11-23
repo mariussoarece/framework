@@ -167,24 +167,38 @@ function Form(p: FormProps) {
       };
       const w = await saveWorkout(p.org, p.id ?? null, input, p.chosen);
 
-      if (p.removed.length) await deleteMedia(p.removed);
+      if (p.removed.length) await deleteMedia(p.removed).catch(() => {});
       const uploads = items.filter((x) => x.picked);
       const idOf: Record<string, string> = {};
+      const failures: string[] = [];
       for (let i = 0; i < uploads.length; i += 1) {
-        const row = await uploadAsset(uploads[i].picked!, {
-          workoutId: w.id,
-          onProgress: (f) => p.setProgress(t('media.uploading', {
-            current: i + 1, total: uploads.length, percent: Math.round(f * 100),
-          })),
-        });
-        idOf[uploads[i].key] = row.id;
+        try {
+          const row = await uploadAsset(uploads[i].picked!, {
+            workoutId: w.id,
+            onProgress: (f) => p.setProgress(t('media.uploading', {
+              current: i + 1, total: uploads.length, percent: Math.round(f * 100),
+            })),
+          });
+          idOf[uploads[i].key] = row.id;
+        } catch (err) {
+          failures.push(p.tError(err));   // keep going with the other files
+        }
       }
       // keep the order chosen with the arrows
       const ids = items.map((x) => (x.picked ? idOf[x.key] : x.key)).filter(Boolean);
-      if (ids.length) await saveWorkoutMediaOrder(w.id, ids);
+      if (ids.length) await saveWorkoutMediaOrder(w.id, ids).catch(() => {});
+      if (failures.length) {
+        // the workout itself is saved: say what was lost, then leave (staying would save it twice)
+        Alert.alert(t('save.notSaved'), t('save.mediaFailed', {
+          count: failures.length, reason: [...new Set(failures)].join('\n'),
+        }), [{ text: 'OK', onPress: () => router.back() }]);
+        return;
+      }
       router.back();
     } catch (err) {
-      p.setError(p.tError(err));
+      const message = p.tError(err);
+      p.setError(message);
+      Alert.alert(t('save.notSaved'), message);
     } finally {
       p.setBusy(false);
       p.setProgress(null);
