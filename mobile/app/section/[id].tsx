@@ -9,6 +9,7 @@ import { Message, Muted } from '../../src/components/ui';
 import { useI18n } from '../../src/i18n/I18nProvider';
 import { getSection, listSectionWorkoutRows, saveWorkoutOrder, type WorkoutRow } from '../../src/lib/data';
 import { cached, remember } from '../../src/lib/listCache';
+import { prefetchWorkoutPage } from '../../src/lib/workoutPage';
 import { DragList } from '../../src/components/DragList';
 import { AddButton } from '../../src/components/AddButton';
 import { restText, workoutSummary } from '../../src/lib/format';
@@ -114,6 +115,7 @@ export default function SectionScreen() {
 
         {!reordering ? (rows ?? []).map((w) => (
           <Pressable key={w.id} accessibilityRole="button" accessibilityLabel={w.name}
+            onPressIn={() => prefetchWorkoutPage(w.id)}
             onPress={() => router.push({ pathname: '/workout/[id]', params: { id: w.id } })}
             style={({ pressed }) => [styles.card, { backgroundColor: theme.surface, borderColor: theme.border, opacity: pressed ? 0.85 : 1 }]}>
             {w.thumbId
