@@ -19,7 +19,8 @@ npx expo install \
   @supabase/supabase-js react-native-url-polyfill \
   expo-image-picker expo-video expo-file-system expo-network \
   @10play/tentap-editor react-native-webview \
-  @react-native-community/datetimepicker
+  @react-native-community/datetimepicker \
+  expo-notifications
 
 npx expo install --dev typescript @types/react
 

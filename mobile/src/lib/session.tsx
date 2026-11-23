@@ -1,6 +1,7 @@
 // Who is logged in, their profile, and their organization's home page.
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { forgetAll } from './listCache';
+import { unregisterPush } from './push';
 import type { Session } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
@@ -107,6 +108,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       await load(data.session);
     },
     signOut: async () => {
+      await unregisterPush().catch(() => {});   // while still signed in: the row is ours to delete
       await supabase.auth.signOut();
       forgetAll();
       await AsyncStorage.removeItem(PENDING_ROLE);

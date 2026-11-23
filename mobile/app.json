@@ -33,7 +33,13 @@
       "expo-video",
       "expo-status-bar",
       "expo-image",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-notifications",
+        {
+          "color": "#4F7D6B"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false

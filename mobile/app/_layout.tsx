@@ -3,7 +3,18 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { I18nProvider, useI18n } from '../src/i18n/I18nProvider';
-import { SessionProvider } from '../src/lib/session';
+import { SessionProvider, useSession } from '../src/lib/session';
+import { registerForPush, startPushListeners } from '../src/lib/push';
+
+// Registers this phone for notifications once someone is signed in, and follows taps.
+function PushSetup() {
+  const { profile } = useSession();
+  React.useEffect(() => startPushListeners(), []);
+  React.useEffect(() => {
+    if (profile?.id) registerForPush().catch(() => {});
+  }, [profile?.id]);
+  return null;
+}
 
 function Routes() {
   const { t } = useI18n();
@@ -28,6 +39,7 @@ export default function RootLayout() {
       <I18nProvider>
         <SessionProvider>
           <StatusBar style="auto" />
+          <PushSetup />
           <Routes />
         </SessionProvider>
       </I18nProvider>
