@@ -4,14 +4,19 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { I18nProvider, useI18n } from '../src/i18n/I18nProvider';
 import { SessionProvider, useSession } from '../src/lib/session';
-import { registerForPush, startPushListeners } from '../src/lib/push';
+import { AppState } from 'react-native';
+import { refreshBadge, registerForPush, startPushListeners } from '../src/lib/push';
 
 // Registers this phone for notifications once someone is signed in, and follows taps.
 function PushSetup() {
   const { profile } = useSession();
   React.useEffect(() => startPushListeners(), []);
   React.useEffect(() => {
-    if (profile?.id) registerForPush().catch(() => {});
+    if (!profile?.id) return;
+    registerForPush().then(() => refreshBadge()).catch(() => {});
+    // each time the app comes back to the front, the icon number is brought up to date
+    const sub = AppState.addEventListener('change', (s: string) => { if (s === 'active') refreshBadge(); });
+    return () => sub.remove();
   }, [profile?.id]);
   return null;
 }

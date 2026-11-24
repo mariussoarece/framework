@@ -15,6 +15,7 @@ import {
   adminOrganizations, adminReports, adminSetOrgStatus, deleteWorkout, listPendingMedia, resolveReport, reviewMedia,
   setDefaultOrganization, type AdminOrg, type AdminReport, type PendingMedia,
 } from '../src/lib/data';
+import { refreshBadge } from '../src/lib/push';
 import { useSession } from '../src/lib/session';
 import { DEFAULT_THEME as theme } from '../src/theme/themes';
 
@@ -53,6 +54,7 @@ export default function Admin() {
     try { await fn(); } catch (err) { Alert.alert(t('schedule.notPossible'), tError(err)); }
     setBusyId(null);
     await load();
+    refreshBadge();
   }
 
   const confirm = (title: string, text: string, ok: string, fn: () => void) =>

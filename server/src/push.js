@@ -49,8 +49,12 @@ export function createPush(cfg, { fetchImpl = fetch, log = console, transport } 
       });
       req.on('error', (e) => { client.close(); resolve({ ok: false, error: e.message }); });
       req.end(JSON.stringify({
-        aps: { alert: { title: msg.title, body: msg.body }, sound: 'default' },
+        aps: {
+          alert: { title: msg.title, body: msg.body }, sound: 'default',
+          ...(Number.isInteger(msg.badge) ? { badge: msg.badge } : {}),
+        },
         ...msg.data,
+        body: msg.data || {},   // where expo-notifications looks for the data
       }));
     });
   }
@@ -89,8 +93,14 @@ export function createPush(cfg, { fetchImpl = fetch, log = console, transport } 
         message: {
           token: deviceToken,
           notification: { title: msg.title, body: msg.body },
-          data: Object.fromEntries(Object.entries(msg.data || {}).map(([k, v]) => [k, String(v)])),
-          android: { priority: 'high' },
+          data: {
+            ...Object.fromEntries(Object.entries(msg.data || {}).map(([k, v]) => [k, String(v)])),
+            body: JSON.stringify(msg.data || {}),   // where expo-notifications looks for the data
+          },
+          android: {
+            priority: 'high',
+            ...(Number.isInteger(msg.badge) ? { notification: { notification_count: msg.badge } } : {}),
+          },
         },
       }),
     });
@@ -113,9 +123,13 @@ export function createPush(cfg, { fetchImpl = fetch, log = console, transport } 
     if (!userId) return 0;
     const profile = await db.service.one('profiles', `id=${eq(userId)}&select=language`);
     const devices = await db.service.select('devices', `user_id=${eq(userId)}`);
+    if (!devices?.length) return 0;
+    // the red number on the app icon, as it is now
+    const badge = await db.service.rpc('badge_count_for', { p_user: userId }).catch(() => null);
+    const message = { ...makeMessage(profile?.language), ...(Number.isInteger(badge) ? { badge } : {}) };
     let sent = 0;
-    for (const d of devices || []) {
-      const r = await send(d, makeMessage(profile?.language));
+    for (const d of devices) {
+      const r = await send(d, message);
       if (r.ok) sent += 1;
       else {
         log.warn?.({ user: userId, platform: d.platform, error: r.error }, 'push failed');

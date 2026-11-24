@@ -54,11 +54,22 @@ async function saveToken(token: string): Promise<void> {
   currentToken = token;
 }
 
+// The red number on the app icon (owner: booking requests to answer; admin: uploads + reports).
+export async function refreshBadge(): Promise<void> {
+  const N = lib();
+  if (!N) return;
+  try {
+    const { data, error } = await supabase.rpc('my_badge_count');
+    if (!error) await N.setBadgeCountAsync(typeof data === 'number' ? data : 0);
+  } catch { /* not important */ }
+}
+
 // Before signing out: this phone should stop getting the previous person's notifications.
 export async function unregisterPush(): Promise<void> {
   if (!currentToken) return;
   await supabase.from('devices').delete().eq('push_token', currentToken);
   currentToken = null;
+  await lib()?.setBadgeCountAsync(0).catch(() => {});
 }
 
 // Where a tapped notification leads.
@@ -92,5 +103,6 @@ export function startPushListeners(): () => void {
   N.getLastNotificationResponseAsync().then((r) => { if (r) open(r); }).catch(() => {});
   const tapped = N.addNotificationResponseReceivedListener(open);
   const refreshed = N.addPushTokenListener((t) => { saveToken(String(t.data)).catch(() => {}); });
-  return () => { tapped.remove(); refreshed.remove(); };
+  const received = N.addNotificationReceivedListener(() => { refreshBadge(); });
+  return () => { tapped.remove(); refreshed.remove(); received.remove(); };
 }

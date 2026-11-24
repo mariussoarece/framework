@@ -8,6 +8,7 @@ import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Choice, Message, Muted, Tabs } from '../components/ui';
 import { DateField, OptionField, TimeField } from '../components/pickers';
+import { refreshBadge } from '../lib/push';
 import { BookingCard } from './BookingCard';
 import { WeekView } from './WeekView';
 import { useI18n } from '../i18n/I18nProvider';
@@ -85,6 +86,7 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
     setError(null);
     try { await fn(); } catch (err) { Alert.alert(t('schedule.notPossible'), tError(err)); }
     await load();
+    refreshBadge();
   };
 
   const requests = bookings.filter((b) => b.status === 'pending');
