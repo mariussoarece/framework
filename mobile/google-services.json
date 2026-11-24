@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "36290220554",
+    "project_id": "yogabythesofa",
+    "storage_bucket": "yogabythesofa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:36290220554:android:37691607571a19790605f3",
+        "android_client_info": {
+          "package_name": "com.yogabythesofa.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXK4Zq_pElmvqU9SZ8qQOfQHDBdbzo_IA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
