@@ -45,6 +45,8 @@ const jobs = setInterval(async () => {
   try {
     const n = await ctx.db.service.rpc('expire_bookings');
     if (n) log.info({ expired: n }, 'expired bookings');
+    const r = await ctx.db.service.rpc('queue_reminders');
+    if (r) log.info({ reminders: r }, 'queued reminders');
   } catch (err) {
     log.error({ err: err.message }, 'job error');
   }

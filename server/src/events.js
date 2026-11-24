@@ -18,6 +18,7 @@ function bookingMessage(key, { b, org, client }, extra = {}) {
     ...t(language, key, {
       org: org.name,
       client: client?.display_name || client?.email || '',
+      title: b.title || t(language, 'session'),
       time: formatTime(b.starts_at, language, org.timezone),
     }),
     data: { type: 'booking', booking_id: b.id, ...extra },
@@ -83,6 +84,47 @@ export const handlers = {
       await ctx.push.toUser(ctx.db, m.uploaded_by, (l) => ({
         ...t(l, 'media_rejected', { reason: reasonText(l, m.reject_reason) }),
         data: { type: 'media', media_id: m.id },
+      }));
+    }
+  },
+
+  // 2 hours before a confirmed session (queued by queue_reminders()).
+  async 'booking.reminder'(ctx, p) {
+    const bc = await bookingContext(ctx, p.booking_id);
+    if (!bc || bc.b.status !== 'accepted') return;
+    await ctx.push.toUser(ctx.db, bc.b.client_id, bookingMessage('booking_reminder', bc));
+  },
+
+  // An owner uploaded pictures/videos (grouped over 2 minutes): tell every super admin.
+  async 'media.uploaded'(ctx, p) {
+    const db = ctx.db.service;
+    const org = await db.one('organizations', `id=${eq(p.organization_id)}&select=name`);
+    const waiting = await db.select('media', `organization_id=${eq(p.organization_id)}&status=eq.pending&select=id`);
+    const count = waiting?.length || 0;
+    if (!org || count === 0) return;   // already handled meanwhile
+    const admins = await db.select('profiles', 'role=eq.super_admin&select=id');
+    for (const a of admins || []) {
+      await ctx.push.toUser(ctx.db, a.id, (l) => ({
+        ...t(l, count === 1 ? 'media_waiting_one' : 'media_waiting_many', { org: org.name, count }),
+        data: { type: 'review' },
+      }));
+    }
+  },
+
+  // The owner added workouts (grouped over 10 minutes): tell the organization's clients.
+  async 'workout.created'(ctx, p) {
+    const db = ctx.db.service;
+    const org = await db.one('organizations', `id=${eq(p.organization_id)}&select=name,status`);
+    if (!org || org.status === 'paused' || org.status === 'closed') return;
+    const added = await db.select('workouts',
+      `organization_id=${eq(p.organization_id)}&created_at=gte.${encodeURIComponent(p.since)}&select=id,name`);
+    const count = added?.length || 0;
+    if (count === 0) return;   // deleted meanwhile
+    const clients = await db.select('profiles', `organization_id=${eq(p.organization_id)}&role=eq.client&select=id`);
+    for (const c of clients || []) {
+      await ctx.push.toUser(ctx.db, c.id, (l) => ({
+        ...t(l, count === 1 ? 'workout_new_one' : 'workout_new_many', { org: org.name, name: added[0].name, count }),
+        data: count === 1 ? { type: 'workout', workout_id: added[0].id } : { type: 'workouts' },
       }));
     }
   },

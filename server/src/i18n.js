@@ -10,6 +10,12 @@ const TEXT = {
     media_rejected: ['Upload not approved', 'One of your uploads was not approved: {reason}'],
     media_published: ['Upload approved', 'Your upload is now visible to your clients.'],
     report_new: ['New content report', '{org}: {what}'],
+    booking_reminder: ['Reminder', '{title} at {org} starts at {time}.'],
+    media_waiting_one: ['Upload to approve', '{org} added a picture or video.'],
+    media_waiting_many: ['Uploads to approve', '{org} added {count} pictures/videos.'],
+    workout_new_one: ['New workout', '{org} added "{name}".'],
+    workout_new_many: ['New workouts', '{org} added {count} new workouts.'],
+    session: 'Your session',
     org_closed_subject: '{org} has closed',
     org_closed_body:
       'Hello,\n\n{org} has closed its account in the app.\n\n'
@@ -28,6 +34,12 @@ const TEXT = {
     media_rejected: ['Încărcare neaprobată', 'Unul dintre fișierele tale nu a fost aprobat: {reason}'],
     media_published: ['Încărcare aprobată', 'Fișierul tău este acum vizibil pentru clienți.'],
     report_new: ['Conținut raportat', '{org}: {what}'],
+    booking_reminder: ['Reminder', '{title} la {org} începe la {time}.'],
+    media_waiting_one: ['De aprobat', '{org} a adăugat o imagine sau un video.'],
+    media_waiting_many: ['De aprobat', '{org} a adăugat {count} imagini/video-uri.'],
+    workout_new_one: ['Exercițiu nou', '{org} a adăugat „{name}”.'],
+    workout_new_many: ['Exerciții noi', '{org} a adăugat {count} exerciții noi.'],
+    session: 'Ședința ta',
     org_closed_subject: '{org} s-a închis',
     org_closed_body:
       'Bună,\n\n{org} și-a închis contul în aplicație.\n\n'

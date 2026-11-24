@@ -66,7 +66,10 @@ export function routeFor(data: Record<string, unknown> | undefined): string | nu
   switch (data?.type) {
     case 'booking': return '/schedule';
     case 'media': return '/home';
-    case 'report': return '/admin';
+    case 'report':
+    case 'review': return '/admin';
+    case 'workout': return typeof data.workout_id === 'string' ? `/workout/${data.workout_id}` : '/workouts';
+    case 'workouts': return '/workouts';
     default: return null;
   }
 }
