@@ -20,7 +20,7 @@ npx expo install \
   expo-image-picker expo-video expo-file-system expo-network \
   @10play/tentap-editor react-native-webview \
   @react-native-community/datetimepicker \
-  expo-notifications
+  expo-notifications expo-dev-client
 
 npx expo install --dev typescript @types/react
 

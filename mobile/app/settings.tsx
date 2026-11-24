@@ -7,6 +7,7 @@ import { Button, Choice, Message, Muted, Screen } from '../src/components/ui';
 import { useI18n } from '../src/i18n/I18nProvider';
 import { LANGUAGES, type Language } from '../src/i18n/translate';
 import { api } from '../src/lib/api';
+import { registerForPush } from '../src/lib/push';
 import { supabase } from '../src/lib/supabase';
 import { useSession } from '../src/lib/session';
 import type { VideoQuality } from '../src/lib/types';
@@ -38,6 +39,22 @@ export default function Settings() {
         { text: t('common.delete'), style: 'destructive', onPress: deleteAccount },
       ],
     );
+  }
+
+  const [testing, setTesting] = useState(false);
+  async function testPush() {
+    setTesting(true);
+    try {
+      const reg = await registerForPush();
+      if (reg === 'unavailable') return Alert.alert(t('push.test'), t('push.unavailable'));
+      if (reg === 'denied') return Alert.alert(t('push.test'), t('push.denied'));
+      const r = await api.testPush();
+      Alert.alert(t('push.test'), r.devices === 0 ? t('push.noDevice') : r.sent > 0 ? t('push.sent') : t('push.serverFailed'));
+    } catch (err) {
+      Alert.alert(t('push.test'), tError(err));
+    } finally {
+      setTesting(false);
+    }
   }
 
   async function deleteAccount() {
@@ -86,6 +103,7 @@ export default function Settings() {
       ) : null}
 
       <View style={{ gap: 12, marginTop: 16 }}>
+        <Button kind="secondary" label={t('push.test')} onPress={testPush} busy={testing} />
         {profile?.role === 'client' ? (
           <Button kind="secondary" label={t('settings.switchOrg')} onPress={() => router.push('/onboarding/client')} />
         ) : null}

@@ -46,6 +46,16 @@ export function createApp(ctx) {
     stripeWebhook(ctx, await readBody(req, 1_000_000), req.headers['stripe-signature']));
 
   // accounts
+  // "Send a test notification" in Settings: to every phone of the person asking.
+  r.add('POST', '/api/push/test', authed(async (_req, _res, _p, _u, user) => {
+    const devices = await ctx.db.service.select('devices', `user_id=${eq(user.userId)}&select=platform`);
+    const sent = await ctx.push.toUser(ctx.db, user.userId, (l) => ({
+      title: l === 'ro' ? 'Notificare de test' : 'Test notification',
+      body: l === 'ro' ? 'Notificările funcționează pe acest telefon.' : 'Notifications work on this phone.',
+      data: { type: 'test' },
+    }));
+    return { devices: devices?.length || 0, sent };
+  }));
   r.add('DELETE', '/api/account', authed(async (_req, _res, _p, _u, user) => deleteMyAccount(ctx, user)));
   r.add('POST', '/api/admin/organizations/:id/close', authed(async (_req, _res, p, _u, user) => {
     if (user.profile?.role !== 'super_admin') throw new HttpError(403, 'super_admin_only');
