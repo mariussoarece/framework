@@ -99,7 +99,14 @@ export function createPush(cfg, { fetchImpl = fetch, log = console, transport } 
           },
           android: {
             priority: 'high',
-            ...(Number.isInteger(msg.badge) ? { notification: { notification_count: msg.badge } } : {}),
+            notification: {
+              // the app's "Default" channel (high importance) shows a banner at the top;
+              // without it Android uses a quiet fallback channel: only in the pulled-down list
+              channel_id: 'default',
+              sound: 'default',
+              default_vibrate_timings: true,
+              ...(Number.isInteger(msg.badge) ? { notification_count: msg.badge } : {}),
+            },
           },
         },
       }),
