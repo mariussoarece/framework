@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<!-- Opened from the emails sent by the sign-in service:
+     - "Confirm your email"  -> shows "Email confirmed, go back to the app"
+     - "Reset your password" -> shows a form to choose a new password
+     The sign-in service puts the details after '#' in the address. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>YogaByTheSofa</title>
+<style>
+  :root { color-scheme: light dark; --accent: #4F7D6B; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         background: #F4F1EC; color: #2B2B2B; padding: 24px; }
+  @media (prefers-color-scheme: dark) { body { background: #1E1F1D; color: #EDEDED; } .card { background: #2A2B28 !important; } }
+  .card { width: 100%; max-width: 420px; background: #FFFFFF; border-radius: 20px; padding: 28px;
+          box-shadow: 0 6px 24px rgba(0,0,0,.08); }
+  h1 { font-size: 22px; margin: 0 0 12px; }
+  p { font-size: 16px; line-height: 1.5; margin: 0 0 12px; }
+  label { display: block; font-size: 14px; font-weight: 600; margin: 14px 0 6px; }
+  input { width: 100%; font-size: 17px; padding: 12px 14px; border-radius: 12px; border: 1px solid #C9C4BB;
+          background: transparent; color: inherit; }
+  button { width: 100%; margin-top: 18px; font-size: 17px; font-weight: 700; padding: 14px; border: 0;
+           border-radius: 14px; background: var(--accent); color: #FFFFFF; cursor: pointer; }
+  button:disabled { opacity: .6; }
+  .error { color: #B3261E; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1 id="title"></h1>
+  <p id="text"></p>
+  <form id="form" class="hidden">
+    <label for="p1" id="l1"></label>
+    <input id="p1" type="password" autocomplete="new-password" minlength="8" required>
+    <label for="p2" id="l2"></label>
+    <input id="p2" type="password" autocomplete="new-password" minlength="8" required>
+    <p id="err" class="error"></p>
+    <button id="save" type="submit"></button>
+  </form>
+</div>
+<script>
+(function () {
+  var ro = (navigator.language || '').toLowerCase().indexOf('ro') === 0;
+  var T = ro ? {
+    confirmed: 'Email confirmat', confirmedText: 'Contul tău este activ. Întoarce-te în aplicație și intră cu emailul și parola ta.',
+    reset: 'Parolă nouă', resetText: 'Alege o parolă nouă pentru contul tău.',
+    p1: 'Parola nouă (cel puțin 8 caractere)', p2: 'Scrie parola din nou', save: 'Salvează parola',
+    short: 'Parola trebuie să aibă cel puțin 8 caractere.', differ: 'Cele două parole nu sunt la fel.',
+    done: 'Parola a fost schimbată', doneText: 'Întoarce-te în aplicație și intră cu parola nouă.',
+    failed: 'Linkul nu mai este valabil', failedText: 'Linkurile din email expiră după o oră și pot fi folosite o singură dată. Cere unul nou din aplicație.',
+    error: 'Nu s-a putut salva. Încearcă din nou.',
+    hello: 'YogaByTheSofa', helloText: 'Această pagină se deschide din emailurile aplicației.'
+  } : {
+    confirmed: 'Email confirmed', confirmedText: 'Your account is active. Go back to the app and sign in with your email and password.',
+    reset: 'New password', resetText: 'Choose a new password for your account.',
+    p1: 'New password (at least 8 characters)', p2: 'Type the password again', save: 'Save password',
+    short: 'The password needs at least 8 characters.', differ: 'The two passwords are not the same.',
+    done: 'Password changed', doneText: 'Go back to the app and sign in with your new password.',
+    failed: 'This link is no longer valid', failedText: 'Email links expire after one hour and work only once. Ask for a new one in the app.',
+    error: 'Could not save. Please try again.',
+    hello: 'YogaByTheSofa', helloText: 'This page opens from the app’s emails.'
+  };
+  document.documentElement.lang = ro ? 'ro' : 'en';
+  var $ = function (id) { return document.getElementById(id); };
+  function show(title, text) { $('title').textContent = title; $('text').textContent = text; }
+
+  var hash = new URLSearchParams(location.hash.replace(/^#/, ''));
+  var query = new URLSearchParams(location.search);
+  // the token stays only in memory: remove it from the address bar
+  if (location.hash) history.replaceState(null, '', location.pathname);
+
+  if (hash.get('error') || query.get('error')) return show(T.failed, T.failedText);
+  var type = hash.get('type');
+  var token = hash.get('access_token');
+
+  if (type === 'recovery' && token) {
+    show(T.reset, T.resetText);
+    $('l1').textContent = T.p1; $('l2').textContent = T.p2; $('save').textContent = T.save;
+    $('form').classList.remove('hidden');
+    $('form').addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var a = $('p1').value, b = $('p2').value;
+      if (a.length < 8) { $('err').textContent = T.short; return; }
+      if (a !== b) { $('err').textContent = T.differ; return; }
+      $('err').textContent = ''; $('save').disabled = true;
+      fetch('/auth/v1/user', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ password: a })
+      }).then(function (r) {
+        if (r.ok) { $('form').classList.add('hidden'); show(T.done, T.doneText); }
+        else if (r.status === 401 || r.status === 403) { $('form').classList.add('hidden'); show(T.failed, T.failedText); }
+        else { $('err').textContent = T.error; $('save').disabled = false; }
+      }).catch(function () { $('err').textContent = T.error; $('save').disabled = false; });
+    });
+  } else if (token || type === 'signup' || type === 'email_change' || type === 'invite') {
+    show(T.confirmed, T.confirmedText);
+  } else {
+    show(T.hello, T.helloText);
+  }
+})();
+</script>
+</body>
+</html>

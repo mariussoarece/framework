@@ -66,6 +66,15 @@ server {
         # Range requests (seeking, start-before-download) work out of the box.
     }
 
+    # the page opened from "confirm your email" / "reset your password" emails
+    location = / {
+        root /usr/share/nginx/web;
+        try_files /index.html =404;
+        add_header Cache-Control "no-store";
+        add_header Referrer-Policy "no-referrer";
+        add_header X-Frame-Options "DENY";
+    }
+
     location / {
         return 404;
     }

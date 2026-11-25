@@ -50,7 +50,8 @@ export default function Auth() {
     if (!validEmail(e)) return setError(t('auth.emailInvalid'));
     setBusy(true);
     try {
-      await supabase.auth.resetPasswordForEmail(e);
+      const { error: err } = await supabase.auth.resetPasswordForEmail(e);
+      if (err) throw err;
       setInfo(t('auth.resetSent'));
     } catch (err) {
       setError(tError(err));
