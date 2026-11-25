@@ -22,6 +22,8 @@ const TEXT = {
       + 'You can keep using the app with {default}: open the app and choose "Continue with {default}", '
       + 'or join another organization with the code your trainer gives you.\n\n'
       + 'Any upcoming paid sessions have been refunded.\n\n— {default}',
+    owner_closed_subject: '{org} was closed',
+    owner_closed_body: 'Hello,\n\n{org} was closed by the administrator. Its workouts, pictures and upcoming bookings were removed, and your clients were told by email.\n\nYour login still works: sign in with this email to create a new organization.\n\n— {default}',
     account_deleted_subject: 'Your account was deleted',
     account_deleted_body: 'Hello,\n\nYour account and its data were deleted as you asked.\n\n— {default}',
   },
@@ -46,6 +48,8 @@ const TEXT = {
       + 'Poți folosi în continuare aplicația cu {default}: deschide aplicația și alege „Continuă cu {default}”, '
       + 'sau alătură-te altei organizații cu codul primit de la antrenorul tău.\n\n'
       + 'Ședințele plătite programate au fost rambursate.\n\n— {default}',
+    owner_closed_subject: '{org} a fost închisă',
+    owner_closed_body: 'Bună,\n\n{org} a fost închisă de administrator. Exercițiile, imaginile și rezervările viitoare au fost șterse, iar clienții tăi au fost anunțați prin email.\n\nContul tău rămâne: intră cu acest email ca să creezi o organizație nouă.\n\n— {default}',
     account_deleted_subject: 'Contul tău a fost șters',
     account_deleted_body: 'Bună,\n\nContul tău și datele lui au fost șterse, așa cum ai cerut.\n\n— {default}',
   },

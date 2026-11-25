@@ -12,8 +12,8 @@ import { useI18n } from '../src/i18n/I18nProvider';
 import { api } from '../src/lib/api';
 import { API_URL } from '../src/lib/config';
 import {
-  adminOrganizations, adminReports, adminSetOrgStatus, deleteWorkout, listPendingMedia, resolveReport, reviewMedia,
-  setDefaultOrganization, type AdminOrg, type AdminReport, type PendingMedia,
+  adminOrganizationHistory, adminOrganizations, adminReports, adminSetOrgStatus, deleteWorkout, listPendingMedia, resolveReport, reviewMedia,
+  setDefaultOrganization, type AdminOrg, type OrgHistory, type AdminReport, type PendingMedia,
 } from '../src/lib/data';
 import { refreshBadge } from '../src/lib/push';
 import { useSession } from '../src/lib/session';
@@ -28,6 +28,7 @@ export default function Admin() {
   const [items, setItems] = useState<PendingMedia[] | null>(null);
   const [reports, setReports] = useState<AdminReport[] | null>(null);
   const [orgs, setOrgs] = useState<AdminOrg[] | null>(null);
+  const [history, setHistory] = useState<OrgHistory[]>([]);
   const [reasons, setReasons] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,8 +37,10 @@ export default function Admin() {
 
   const load = useCallback(async () => {
     try {
-      const [m, r, o] = await Promise.all([listPendingMedia(), adminReports(), adminOrganizations()]);
-      setItems(m); setReports(r); setOrgs(o);
+      const [m, r, o, h] = await Promise.all([
+        listPendingMedia(), adminReports(), adminOrganizations(), adminOrganizationHistory().catch(() => []),
+      ]);
+      setItems(m); setReports(r); setOrgs(o); setHistory(h);
     } catch (err) {
       setError(tError(err));
     }
@@ -192,6 +195,24 @@ export default function Admin() {
                         setInfo(t('admin.closed', { name: o.name, n: r.clients }));
                       }))} />
                 ) : null}
+              </View>
+            ))}
+
+            {/* history: every organization with its dates; only open ones are active */}
+            {history.length ? <Text style={[styles.big, { marginTop: 12 }]}>{t('admin.history')}</Text> : null}
+            {history.map((h) => (
+              <View key={h.id} style={[styles.card, { gap: 4 }]}>
+                <View style={styles.row}>
+                  <Text style={[styles.org, { flex: 1, color: theme.text }]}>{h.name}</Text>
+                  <Text style={[styles.badge, h.active ? styles.badgeOk : styles.badgeBad]}>
+                    {h.active ? t('admin.active') : t('admin.status.closed')}
+                  </Text>
+                </View>
+                <Muted>{[t('admin.code', { code: h.join_code }), h.owner_email ?? ''].filter(Boolean).join('  ·  ')}</Muted>
+                <Muted>{t('admin.period', {
+                  from: when(h.created_at),
+                  to: h.closed_at ? when(h.closed_at) : t('admin.now'),
+                })}</Muted>
               </View>
             ))}
           </>

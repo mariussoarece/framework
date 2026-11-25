@@ -75,7 +75,7 @@ export async function unregisterPush(): Promise<void> {
 // Where a tapped notification leads.
 export function routeFor(data: Record<string, unknown> | undefined): string | null {
   switch (data?.type) {
-    case 'booking': return '/schedule';
+    case 'booking': return typeof data.tab === 'string' ? `/schedule?tab=${data.tab}` : '/schedule';
     case 'media': return '/home';
     case 'report':
     case 'review': return '/admin';

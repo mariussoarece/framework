@@ -384,6 +384,16 @@ export async function adminOrganizations(): Promise<AdminOrg[]> {
   return check(await supabase.rpc('admin_organizations')) as AdminOrg[];
 }
 
+export type OrgHistory = {
+  id: string; name: string; join_code: string; owner_email: string | null; status: string;
+  active: boolean; created_at: string; closed_at: string | null;
+};
+
+// Every organization ever created, open or closed, newest first (super admin).
+export async function adminOrganizationHistory(): Promise<OrgHistory[]> {
+  return check(await supabase.rpc('admin_organization_history')) as OrgHistory[];
+}
+
 export async function adminSetOrgStatus(id: string, status: 'active' | 'paused'): Promise<void> {
   check(await supabase.rpc('admin_set_org_status', { p_org: id, p_status: status }));
 }

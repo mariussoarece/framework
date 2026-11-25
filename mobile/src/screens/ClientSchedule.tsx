@@ -1,6 +1,6 @@
 // Client: free times by day (tap to request), and my bookings with cancel.
 import { ScreenBackground } from '../components/ScreenBackground';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { KeyboardScroll } from '../components/KeyboardScroll';
 import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
@@ -15,11 +15,15 @@ import { addDays, bookableRange, clock, dayKey, dayLabel, formatMoney, groupByDa
 import { useSession } from '../lib/session';
 import type { Theme } from '../theme/themes';
 
-export function ClientSchedule({ theme }: { theme: Theme }) {
+type Tab = 'book' | 'week' | 'mine';
+const TABS: Tab[] = ['book', 'week', 'mine'];
+
+export function ClientSchedule({ theme, initialTab }: { theme: Theme; initialTab?: string }) {
   const { t, tError, language } = useI18n();
   const { org, profile } = useSession();
   const tz = org?.timezone ?? 'Europe/Bucharest';
-  const [tab, setTab] = useState<'book' | 'week' | 'mine'>('book');
+  const [tab, setTab] = useState<Tab>(TABS.includes(initialTab as Tab) ? (initialTab as Tab) : 'book');
+  useEffect(() => { if (TABS.includes(initialTab as Tab)) setTab(initialTab as Tab); }, [initialTab]);
   const thisWeek = weekStart(today(tz));
   const [week, setWeek] = useState(thisWeek);     // Monday of the week shown in "Book"
   const MAX_WEEKS_AHEAD = 12;

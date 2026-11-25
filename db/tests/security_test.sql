@@ -333,8 +333,13 @@ select test.fails($$select * from app.close_organization((select id from public.
                   'cannot_close_default', 'YogaByTheSofa cannot be closed');
 
 select test.claims(:u8, 'new.owner@example.com'); set role authenticated;
-select test.ok((select join_code from public.create_organization('Yoga With Marius')) = 'yogawithmarius2',
-               'a closed organization''s name can be reused (new join code)');
+select test.ok((select join_code from public.create_organization('Yoga With Marius')) = 'yogawithmarius',
+               'a closed organization''s name and join code can be reused (migration 014)');
+reset role;
+select test.ok((select count(*) from public.organizations where join_code = 'yogawithmarius') = 2
+               and (select owner_email from public.organizations where join_code = 'yogawithmarius' and status <> 'closed')
+                   = 'new.owner@example.com',
+               'the closed one stays in the history; the new one keeps its owner email');
 
 reset role;
 \echo 'All tests passed.'

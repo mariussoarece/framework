@@ -1,7 +1,7 @@
 // Owner: booking requests, upcoming sessions, the week, the timetable (open hours and
 // classes, several days at once, every week or N weeks), and time off (whole days, blocked sessions).
 import { ScreenBackground } from '../components/ScreenBackground';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { KeyboardScroll } from '../components/KeyboardScroll';
 import { Alert, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
@@ -43,12 +43,15 @@ type EntryForm = {
   startsOn: string;
 };
 
-export function OwnerSchedule({ theme }: { theme: Theme }) {
+const TABS: Tab[] = ['requests', 'upcoming', 'week', 'hours', 'off'];
+
+export function OwnerSchedule({ theme, initialTab }: { theme: Theme; initialTab?: string }) {
   const { t, tError, language } = useI18n();
   const { org } = useSession();
   const tz = org?.timezone ?? 'Europe/Bucharest';
   const paid = org?.plan !== 'none';
-  const [tab, setTab] = useState<Tab>('hours');
+  const [tab, setTab] = useState<Tab>(TABS.includes(initialTab as Tab) ? (initialTab as Tab) : 'hours');
+  useEffect(() => { if (TABS.includes(initialTab as Tab)) setTab(initialTab as Tab); }, [initialTab]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [entries, setEntries] = useState<Availability[]>([]);
   const [daysOff, setDaysOff] = useState<DayOff[]>([]);
@@ -90,6 +93,25 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
   };
 
   const requests = bookings.filter((b) => b.status === 'pending');
+
+  // Approve every waiting request; the ones that can't be approved (e.g. the class is full)
+  // are listed at the end, the others go through.
+  const [approvingAll, setApprovingAll] = useState(false);
+  async function approveAll() {
+    setApprovingAll(true);
+    const failed: string[] = [];
+    for (const b of requests) {
+      try { await decideBooking(b.id, true); } catch (err) { failed.push(tError(err)); }
+    }
+    setApprovingAll(false);
+    await load();
+    refreshBadge();
+    if (failed.length) {
+      Alert.alert(t('schedule.notPossible'), t('schedule.approveAllFailed', {
+        n: failed.length, reason: [...new Set(failed)].join('\n'),
+      }));
+    }
+  }
   const upcoming = bookings.filter((b) => b.status === 'accepted');
 
   // ---------------------------------------------------------------- timetable entries
@@ -227,6 +249,13 @@ export function OwnerSchedule({ theme }: { theme: Theme }) {
         {tab === 'requests' ? (
           <>
             {!requests.length ? <Muted theme={theme}>{t('schedule.noRequests')}</Muted> : null}
+            {requests.length > 1 ? (
+              <Button theme={theme} label={t('schedule.approveAll', { n: requests.length })} busy={approvingAll}
+                onPress={() => Alert.alert(t('schedule.approveAll', { n: requests.length }), t('schedule.approveAllConfirm'), [
+                  { text: t('common.cancel'), style: 'cancel' },
+                  { text: t('schedule.approve'), onPress: approveAll },
+                ])} />
+            ) : null}
             {requests.map((b) => (
               <BookingCard key={b.id} booking={b} tz={tz} theme={theme} showClient
                 onAccept={() => run(() => decideBooking(b.id, true))}

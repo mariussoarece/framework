@@ -29,13 +29,15 @@ async function cancelUpcoming(ctx, filter, by) {
 }
 
 // Closes an organization: refunds, emails its clients, deletes its content and files.
-export async function closeOrganization(ctx, orgId) {
+// notifyOwner: false when the owner is deleting their own account (they get another email).
+export async function closeOrganization(ctx, orgId, { notifyOwner = true } = {}) {
   const db = ctx.db.service;
   const org = await db.one('organizations', `id=${eq(orgId)}`);
   if (!org) throw new HttpError(404, 'organization_not_found');
   if (org.is_default) throw new HttpError(409, 'cannot_close_default');
   if (org.status === 'closed') return { clients: 0 };
 
+  const owner = org.owner_id ? await db.one('profiles', `id=${eq(org.owner_id)}&select=email,language`) : null;
   await cancelUpcoming(ctx, `organization_id=${eq(orgId)}`, 'system');
   const clients = await db.rpc('service_close_organization', { p_org: orgId });
   const defaultName = await defaultOrgName(ctx.db);
@@ -53,6 +55,15 @@ export async function closeOrganization(ctx, orgId) {
     }
   }
 
+  const ownerEmail = owner?.email || org.owner_email;
+  if (notifyOwner && ownerEmail) {
+    await ctx.mail.send({
+      to: ownerEmail,
+      subject: t(owner?.language, 'owner_closed_subject', { org: org.name }),
+      text: t(owner?.language, 'owner_closed_body', { org: org.name, default: defaultName }),
+    }).catch((err) => ctx.log.error({ to: ownerEmail, err: err.message }, 'closing email failed'));
+  }
+
   await deleteOrganizationFiles(ctx, orgId);
   await db.remove('media', `organization_id=${eq(orgId)}`);
   return { clients: clients?.length || 0 };
@@ -68,7 +79,7 @@ export async function deleteMyAccount(ctx, user) {
   if (p?.role === 'owner' && p.organization_id) {
     const org = await db.one('organizations', `id=${eq(p.organization_id)}`);
     if (org?.is_default) throw new HttpError(409, 'default_owner_cannot_self_delete');
-    await closeOrganization(ctx, p.organization_id);
+    await closeOrganization(ctx, p.organization_id, { notifyOwner: false });
   } else if (p) {
     await cancelUpcoming(ctx, `client_id=${eq(user.userId)}`, 'client');
   }

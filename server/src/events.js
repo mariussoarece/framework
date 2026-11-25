@@ -13,6 +13,15 @@ async function bookingContext(ctx, bookingId) {
   return { b, org, client };
 }
 
+const TAB_FOR = {
+  booking_request: 'requests',            // owner: Approve
+  booking_cancelled_by_client: 'upcoming', // owner: Bookings
+  booking_accepted: 'mine',               // client: My bookings
+  booking_declined: 'mine',
+  booking_cancelled_by_owner: 'mine',
+  booking_reminder: 'mine',
+};
+
 function bookingMessage(key, { b, org, client }, extra = {}) {
   return (language) => ({
     ...t(language, key, {
@@ -21,7 +30,8 @@ function bookingMessage(key, { b, org, client }, extra = {}) {
       title: b.title || t(language, 'session'),
       time: formatTime(b.starts_at, language, org.timezone),
     }),
-    data: { type: 'booking', booking_id: b.id, ...extra },
+    // which tab of Scheduling opens when the notification is tapped
+    data: { type: 'booking', booking_id: b.id, tab: TAB_FOR[key] || '', ...extra },
   });
 }
 
