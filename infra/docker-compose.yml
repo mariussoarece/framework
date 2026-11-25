@@ -31,6 +31,10 @@ services:
 
   auth:
     image: supabase/gotrue:${GOTRUE_VERSION}
+    # Postfix on this same VPS: inside the containers, the mail server's name points to the VPS
+    # itself (host-gateway), so the TLS certificate still matches. Unused when SMTP_LOCAL_NAME is empty.
+    extra_hosts:
+      - "${SMTP_LOCAL_NAME:-local-smtp.invalid}:host-gateway"
     restart: unless-stopped
     depends_on:
       db:
@@ -82,6 +86,10 @@ services:
 
   api:
     build: ../server
+    # Postfix on this same VPS: inside the containers, the mail server's name points to the VPS
+    # itself (host-gateway), so the TLS certificate still matches. Unused when SMTP_LOCAL_NAME is empty.
+    extra_hosts:
+      - "${SMTP_LOCAL_NAME:-local-smtp.invalid}:host-gateway"
     restart: unless-stopped
     depends_on: [auth, rest]
     env_file: .env
