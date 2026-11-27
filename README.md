@@ -2,9 +2,9 @@
 
 A white-label app platform for physical therapy, yoga, fitness, martial arts and similar businesses.
 Each business is an **organization** with its own branded home page, booking timetable and workout library.
-Clients without a code join the default organization, **YogaByTheSofa**.
+Clients without a code join the default organization, **MyRitmio**.
 
-Full specification: *YogaByTheSofa Platform — App Specification* (Claude doc).
+Full specification: *MyRitmio Platform — App Specification* (Claude doc).
 
 ## Repository layout
 
@@ -25,8 +25,8 @@ Full specification: *YogaByTheSofa Platform — App Specification* (Claude doc).
 | Function | Who | What |
 | --- | --- | --- |
 | `create_organization(p_name, p_plan)` | new owner | Creates the organization (unique name, generated join code) with two default buttons |
-| `find_organization(p_code)` | anyone logged in | Shows an organization's name from its code; no code = YogaByTheSofa |
-| `join_organization(p_code)` | client | Joins by code; no code = YogaByTheSofa |
+| `find_organization(p_code)` | anyone logged in | Shows an organization's name from its code; no code = MyRitmio |
+| `join_organization(p_code)` | client | Joins by code; no code = MyRitmio |
 | `available_slots(p_from, p_days)` | member | Free slots in the organization's timetable |
 | `request_booking(p_starts_at)` | client | Creates a pending booking |
 | `decide_booking(p_booking, p_accept)` | owner | Accepts or declines |

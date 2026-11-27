@@ -32,7 +32,7 @@ npm test                      # translations and rich-text tests
 | Welcome | `app/welcome.tsx` | First launch: "I'm a client" / "I run a business", language switch |
 | Sign in / up | `app/auth.tsx` | Email + password, email confirmation, forgot password |
 | Owner setup | `app/onboarding/owner.tsx` | Organization name (unique) + payment plan, first month free |
-| Client setup | `app/onboarding/client.tsx` | Join with a code, or continue with YogaByTheSofa |
+| Client setup | `app/onboarding/client.tsx` | Join with a code, or continue with MyRitmio |
 | Home | `app/home.tsx` | Organization name, theme, background and foreground images, description, the two buttons |
 | Settings | `app/settings.tsx` | Language, video quality, owner's join code, switch organization, sign out, delete my account |
 | Edit home page | `app/edit-home.tsx` | Owner: theme, background and front image, description (rich text), button labels, icons and colors |

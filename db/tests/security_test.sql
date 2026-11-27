@@ -116,8 +116,8 @@ select public.join_organization('karatedojo');
 select test.ok((select count(*) from public.workouts) = 0, 'client of B sees none of A''s workouts');
 
 reset role; select test.claims(:u6, 'nocode@example.com'); set role authenticated;
-select test.ok((select name from public.join_organization(null)) = 'YogaByTheSofa',
-               'client without a code joins YogaByTheSofa');
+select test.ok((select name from public.join_organization(null)) = 'MyRitmio',
+               'client without a code joins MyRitmio');
 
 reset role; select test.claims(:u7, 'client.a2@example.com'); set role authenticated;
 select public.join_organization('yogawithmarius');
@@ -330,7 +330,7 @@ select test.ok((select count(*) from public.workouts where organization_id = cur
                'closed organization''s workouts are deleted');
 select test.ok((select status from public.bookings where organization_id = current_setting('test.org_a')::uuid limit 1) = 'cancelled', 'future bookings are cancelled');
 select test.fails($$select * from app.close_organization((select id from public.organizations where is_default))$$,
-                  'cannot_close_default', 'YogaByTheSofa cannot be closed');
+                  'cannot_close_default', 'MyRitmio cannot be closed');
 
 select test.claims(:u8, 'new.owner@example.com'); set role authenticated;
 select test.ok((select join_code from public.create_organization('Yoga With Marius')) = 'yogawithmarius',

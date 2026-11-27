@@ -49,7 +49,7 @@ export function loadConfig(env = process.env) {
       user: env.SMTP_USER || '',
       pass: env.SMTP_PASS || '',
       from: env.SMTP_SENDER || '',
-      fromName: env.SMTP_SENDER_NAME || 'YogaByTheSofa',
+      fromName: env.SMTP_SENDER_NAME || 'MyRitmio',
     },
 
     eventPollMs: Number(env.EVENT_POLL_MS || 3000),

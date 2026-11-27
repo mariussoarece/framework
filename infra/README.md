@@ -61,7 +61,7 @@ echo 'deploy-hook = docker exec framework-nginx-1 nginx -s reload' >> /etc/letse
 ```bash
 cd /opt/framework/infra
 docker compose --env-file .env up -d
-cd .. && ./infra/scripts/migrate.sh        # creates tables, security rules, YogaByTheSofa
+cd .. && ./infra/scripts/migrate.sh        # creates tables, security rules, MyRitmio
 ```
 
 Check:
@@ -117,9 +117,9 @@ ssh -L 5050:127.0.0.1:5050 root@your-vps
 
 Then open http://localhost:5050, log in with `PGADMIN_EMAIL` / `PGADMIN_PASSWORD`, and add a server: host `db`, user `postgres`, password `POSTGRES_PASSWORD`.
 
-## 8. Make yourself super admin and owner of YogaByTheSofa
+## 8. Make yourself super admin and owner of MyRitmio
 
-You use two accounts: one super admin, one owner for YogaByTheSofa.
+You use two accounts: one super admin, one owner for MyRitmio.
 
 1. Sign up in the app with both emails (the owner one choosing "Client" for now is fine).
 2. In pgAdmin (or `docker compose exec db psql -U postgres -d app`):
@@ -130,7 +130,7 @@ insert into profiles (id, email, role)
 select id, email, 'super_admin' from auth.users where email = 'admin@yourmail.com'
 on conflict (id) do update set role = 'super_admin', organization_id = null;
 
--- owner of YogaByTheSofa
+-- owner of MyRitmio
 update profiles set role = 'owner',
        organization_id = (select id from organizations where is_default)
  where email = 'owner@yourmail.com';
@@ -138,4 +138,4 @@ update organizations set owner_id = (select id from profiles where email = 'owne
  where is_default;
 ```
 
-To rename YogaByTheSofa, edit its name in the app as its owner. To make another organization the default, call `set_default_organization` as super admin.
+To rename MyRitmio, edit its name in the app as its owner. To make another organization the default, call `set_default_organization` as super admin.

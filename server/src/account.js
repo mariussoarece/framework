@@ -6,7 +6,7 @@ import { deleteOrganizationFiles } from './media.js';
 import { settlePayment } from './payments.js';
 
 async function defaultOrgName(db) {
-  return (await db.service.one('organizations', 'is_default=is.true&select=name'))?.name || 'YogaByTheSofa';
+  return (await db.service.one('organizations', 'is_default=is.true&select=name'))?.name || 'MyRitmio';
 }
 
 // Removes the login itself from the auth service.

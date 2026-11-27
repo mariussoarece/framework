@@ -309,7 +309,7 @@ export const ro: Record<TextKey, string> = {
   'error.invalid_credentials': 'Email sau parolă greșită.',
   'error.email_not_confirmed': 'Te rugăm să-ți confirmi întâi emailul (verifică inboxul).',
   'error.user_already_exists': "Există deja un cont cu acest email. Intră cu el: dacă organizația lui a fost închisă, poți crea una nouă.",
-  'error.default_owner_cannot_self_delete': 'Contul proprietarului YogaByTheSofa nu se poate șterge singur.',
+  'error.default_owner_cannot_self_delete': 'Contul proprietarului MyRitmio nu se poate șterge singur.',
   'error.slot_unavailable': "Această oră tocmai a fost ocupată. Te rugăm să alegi alta.",
   'error.already_booked': "Ai rezervat deja această oră.",
   'error.organization_unavailable': "Programările sunt suspendate pentru această organizație.",

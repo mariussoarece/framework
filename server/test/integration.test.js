@@ -210,7 +210,7 @@ test('server end to end', { skip: !DB && 'set TEST_DB_URL to run' }, async () =>
     assert.equal((await db.service.one('organizations', `id=eq.${org.id}`)).status, 'closed');
     assert.deepEqual(mails.map((x) => x.subject).sort(),
       ['Yoga Test has closed', 'Yoga Test s-a închis', 'Your account was deleted'].sort());
-    assert.ok(mails.find((x) => x.to === 'client2@example.com').text.includes('YogaByTheSofa'));
+    assert.ok(mails.find((x) => x.to === 'client2@example.com').text.includes('MyRitmio'));
     assert.ok(!existsSync(join(mediaRoot, 'published', org.id)), 'organization files deleted');
     assert.equal(await db.service.one('profiles', `id=eq.${id.owner}`), null, 'owner profile deleted');
     assert.deepEqual(authCalls[0], ['DELETE', `http://auth:9999/admin/users/${id.owner}`], 'login removed');

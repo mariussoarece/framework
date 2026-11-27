@@ -66,7 +66,7 @@ test('texts in English and Romanian', () => {
   assert.equal(t('ro', 'booking_accepted', { org: 'Dojo', time: 'X' }).title, 'Programare confirmată');
   assert.equal(t('fr', 'booking_accepted', { org: 'Dojo', time: 'X' }).title, 'Booking confirmed');
   assert.match(formatTime('2026-12-01T08:00:00Z', 'ro', 'Europe/Bucharest'), /10:00/);
-  assert.match(t('en', 'org_closed_body', { org: 'A', default: 'YogaByTheSofa' }), /Continue with YogaByTheSofa/);
+  assert.match(t('en', 'org_closed_body', { org: 'A', default: 'MyRitmio' }), /Continue with MyRitmio/);
 });
 
 test('router extracts parameters', () => {
@@ -104,7 +104,7 @@ test('SMTP client delivers a UTF-8 mail with login', async () => {
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const mailer = createMailer({
     host: '127.0.0.1', port: server.address().port, user: 'u', pass: 'p',
-    from: 'no-reply@example.com', fromName: 'YogaByTheSofa',
+    from: 'no-reply@example.com', fromName: 'MyRitmio',
   });
   await mailer.send({ to: 'client@example.com', subject: 'Programare confirmată', text: 'Bună ziua, ședința e confirmată.' });
   server.close();

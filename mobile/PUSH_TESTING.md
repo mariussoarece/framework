@@ -78,7 +78,7 @@ docker compose logs --tail=20 api
 1. On the Mac: `npx expo start -c`
    - With `expo-dev-client` installed, the server starts for the development build.
      **For the iPhone in Expo Go press `s`** ("switch to Expo Go") and scan the QR code as before.
-2. On the emulator: open **YogaByTheSofa** (the new app, not Expo Go).
+2. On the emulator: open **MyRitmio** (the new app, not Expo Go).
    If it doesn't find the server by itself, choose **Enter URL manually**: `http://10.0.2.2:8081`
 3. Sign in. Allow notifications when asked.
 4. **Settings → Send a test notification.** Put the app in the background: the notification
@@ -98,8 +98,8 @@ Tap a notification: the app opens on the right screen.
 
 ## If the test notification says…
 
-- **"don't work in Expo Go"** – you opened Expo Go instead of the YogaByTheSofa app.
-- **"turned off"** – emulator Settings → Apps → YogaByTheSofa → Notifications → on.
+- **"don't work in Expo Go"** – you opened Expo Go instead of the MyRitmio app.
+- **"turned off"** – emulator Settings → Apps → MyRitmio → Notifications → on.
 - **"not registered"** – close the app, open it again, try again.
 - **"server could not send"** – the Firebase key on the VPS: check step 2 and
   `docker compose logs --tail=50 api` (look for `push failed`).

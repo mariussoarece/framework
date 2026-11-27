@@ -307,7 +307,7 @@ export const en = {
   'error.invalid_credentials': 'Wrong email or password.',
   'error.email_not_confirmed': 'Please confirm your email first (check your inbox).',
   'error.user_already_exists': "An account with this email already exists. Sign in with it: if its organization was closed, you can create a new one.",
-  'error.default_owner_cannot_self_delete': 'The YogaByTheSofa owner account cannot delete itself.',
+  'error.default_owner_cannot_self_delete': 'The MyRitmio owner account cannot delete itself.',
   'error.slot_unavailable': "This time was just taken. Please choose another.",
   'error.already_booked': "You already booked this time.",
   'error.organization_unavailable': "Bookings are paused for this organization.",
