@@ -23,7 +23,7 @@ export const en = {
   'auth.forgot': 'Forgot password?',
   'auth.toSignIn': 'Already have an account? Sign in',
   'auth.toSignUp': 'No account yet? Create one',
-  'auth.checkEmail': 'Check your email to confirm your account, then sign in.',
+  'auth.checkEmail': "Check your email to confirm your account, then sign in. No email within a few minutes? Look in Spam. If this email already has an account, no new email is sent: sign in, or use “Forgot password”.",
   'auth.resetSent': 'If an account exists for this email, we sent a link to reset the password.',
   'auth.passwordShort': 'The password needs at least 8 characters.',
   'auth.emailInvalid': 'Please enter a valid email address.',

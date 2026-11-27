@@ -25,7 +25,7 @@ export const ro: Record<TextKey, string> = {
   'auth.forgot': 'Ai uitat parola?',
   'auth.toSignIn': 'Ai deja cont? Autentifică-te',
   'auth.toSignUp': 'Nu ai cont? Creează unul',
-  'auth.checkEmail': 'Verifică-ți emailul pentru a confirma contul, apoi autentifică-te.',
+  'auth.checkEmail': "Verifică-ți emailul pentru a confirma contul, apoi autentifică-te. Nu a venit în câteva minute? Uită-te în Spam. Dacă emailul are deja un cont, nu se trimite niciun email nou: intră în cont sau folosește „Am uitat parola”.",
   'auth.resetSent': 'Dacă există un cont cu acest email, am trimis un link pentru resetarea parolei.',
   'auth.passwordShort': 'Parola trebuie să aibă cel puțin 8 caractere.',
   'auth.emailInvalid': 'Te rugăm să introduci o adresă de email validă.',
