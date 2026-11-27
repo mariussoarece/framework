@@ -63,7 +63,7 @@ export function Button({ label, onPress, busy, disabled, kind = 'primary', theme
   );
 }
 
-export function Field({ label, hint, theme = DEFAULT_THEME, ...input }: TextInputProps & {
+export function Field({ label, hint, theme = DEFAULT_THEME, style, ...input }: TextInputProps & {
   label: string; hint?: string; theme?: Theme;
 }) {
   return (
@@ -72,7 +72,8 @@ export function Field({ label, hint, theme = DEFAULT_THEME, ...input }: TextInpu
       <TextInput
         placeholderTextColor={theme.muted}
         {...input}
-        style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surface }]}
+        style={[styles.input, input.multiline ? styles.multiline : null,
+          { color: theme.text, borderColor: theme.border, backgroundColor: theme.surface }, style]}
       />
       {hint ? <Muted theme={theme}>{hint}</Muted> : null}
     </View>
@@ -116,6 +117,7 @@ export function Choice({ title, hint, selected, onPress, theme = DEFAULT_THEME }
 }
 
 const styles = StyleSheet.create({
+  multiline: { textAlignVertical: 'top' },
   content: { padding: 24, gap: 16 },
   title: { fontSize: 28, fontWeight: '700' },
   muted: { fontSize: 15, lineHeight: 21 },

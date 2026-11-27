@@ -295,3 +295,8 @@ test('upload errors have friendly texts', () => {
   assert.match(errorText('ro', new Error('unsupported_type')), /tip de fișier/);
   assert.match(errorText('en', new Error('upload_cancelled')), /interrupted/);
 });
+
+test('missing table or function on the server has its own message', () => {
+  assert.match(errorText('en', { message: 'Could not find the table public.announcements in the schema cache', code: 'PGRST205' }), /missing an update/);
+  assert.match(errorText('ro', { message: 'relation "public.announcements" does not exist', code: '42P01' }), /migrare/);
+});

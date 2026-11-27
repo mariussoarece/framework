@@ -348,5 +348,6 @@ export const ro: Record<TextKey, string> = {
   'save.mediaFailed': "Exercițiul a fost salvat, dar {count} imagine/imagini sau video(uri) nu s-au putut încărca:\n{reason}\n\nDeschide exercițiul și adaugă-le din nou.",
   'error.too_many_requests': "Prea multe încercări. Așteaptă puțin și încearcă din nou.",
   'error.signup_failed': "Contul nu a putut fi creat acum. Încearcă din nou peste câteva minute.",
+  'error.server_outdated': "Serverului îi lipsește o actualizare (o migrare a bazei de date). Încearcă din nou mai târziu.",
   'error.network': 'Nu există conexiune la server. Verifică internetul și încearcă din nou.',
 };

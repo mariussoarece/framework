@@ -36,6 +36,11 @@ export function errorText(language: Language, err: unknown): string {
     });
   }
   const code = raw.toLowerCase();
+  const pgCode = String((err as { code?: string })?.code ?? '');
+  if (['PGRST202', 'PGRST205', '42P01', '42883'].includes(pgCode)
+      || /could not find the (table|function)|relation .* does not exist/.test(code)) {
+    return translate(language, 'error.server_outdated');
+  }
   const known: Record<string, TextKey> = {
     name_taken: 'error.name_taken',
     organization_not_found: 'error.organization_not_found',

@@ -58,7 +58,8 @@ export default function Messages() {
         <View style={{ gap: 10 }}>
           <Muted theme={theme}>{t('messages.ownerIntro')}</Muted>
           <Field theme={theme} label={t('messages.titleLabel')} value={title} onChangeText={setTitle} maxLength={80} />
-          <Field theme={theme} label={t('messages.bodyLabel')} value={body} onChangeText={setBody} multiline maxLength={500} />
+          <Field theme={theme} label={t('messages.bodyLabel')} value={body} onChangeText={setBody} multiline maxLength={500}
+            style={{ minHeight: 140 }} hint={`${body.length}/500`} />
           <Button theme={theme} label={t('messages.send')} onPress={confirmSend} busy={busy}
             disabled={!title.trim() || !body.trim()} />
         </View>
