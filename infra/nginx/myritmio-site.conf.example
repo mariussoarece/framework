@@ -1,0 +1,14 @@
+# Host nginx: the public website https://myritmio.com (and www), static files from the repo.
+# Install: see infra/DOMAIN-AND-MAIL.md, step 9.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name myritmio.com www.myritmio.com;
+
+    root /opt/framework/infra/site;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}

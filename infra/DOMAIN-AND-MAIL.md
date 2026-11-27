@@ -180,3 +180,22 @@ Picture and video links are now made with https://api.myritmio.com.
    the email arrives, the link opens the "New password" page.
 4. If nothing arrives: `sudo tail -n 50 /var/log/mail.log` and
    `docker compose logs --tail=50 auth api | grep -i -E "smtp|mail"`.
+
+## 9. The website https://myritmio.com (e.g. /become-owner/)
+
+Cloudflare DNS for myritmio.com (proxy can stay **DNS only**):
+
+| Type | Name | Value |
+|---|---|---|
+| A | `@` | `45.10.163.167` |
+| A | `www` | `45.10.163.167` |
+
+Then on the VPS (as `yogaadmin`):
+```bash
+sudo cp /opt/framework/infra/nginx/myritmio-site.conf.example /etc/nginx/sites-available/myritmio-site
+sudo ln -s /etc/nginx/sites-available/myritmio-site /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d myritmio.com -d www.myritmio.com
+```
+The pages are the files in `infra/site/`; after a `git pull` they are live at once.
+Check: https://myritmio.com/become-owner/

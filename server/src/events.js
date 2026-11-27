@@ -98,7 +98,23 @@ export const handlers = {
     }
   },
 
-  // 2 hours before a confirmed session (queued by queue_reminders()).
+  // An owner's message to all the clients of the organization (send_announcement()).
+  async 'announcement.created'(ctx, p) {
+    const db = ctx.db.service;
+    const a = await db.one('announcements', `id=${eq(p.announcement_id)}&select=organization_id,title,body`);
+    if (!a) return;
+    const org = await db.one('organizations', `id=${eq(a.organization_id)}&select=name`);
+    const clients = await db.select('profiles', `organization_id=${eq(a.organization_id)}&role=eq.client&select=id`);
+    for (const c of clients || []) {
+      await ctx.push.toUser(ctx.db, c.id, () => ({
+        title: `${org?.name ? `${org.name}: ` : ''}${a.title}`.slice(0, 120),
+        body: a.body,
+        data: { type: 'announcement', announcement_id: p.announcement_id },
+      }));
+    }
+  },
+
+  // 30 minutes before a confirmed session (queued by queue_reminders()).
   async 'booking.reminder'(ctx, p) {
     const bc = await bookingContext(ctx, p.booking_id);
     if (!bc || bc.b.status !== 'accepted') return;

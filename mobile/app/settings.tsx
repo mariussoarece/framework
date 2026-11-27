@@ -1,7 +1,7 @@
 // Language, video quality, join code (owners), switch organization (clients),
 // sign out and Delete my account.
 import React, { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { Alert, Linking, View } from 'react-native';
 import { router } from 'expo-router';
 import { Button, Choice, Message, Muted, Screen } from '../src/components/ui';
 import { useI18n } from '../src/i18n/I18nProvider';
@@ -104,8 +104,17 @@ export default function Settings() {
 
       <View style={{ gap: 12, marginTop: 16 }}>
         <Button kind="secondary" label={t('push.test')} onPress={testPush} busy={testing} />
+        {profile?.role === 'owner' || profile?.role === 'client' ? (
+          <Button kind="secondary" label={profile.role === 'owner' ? t('messages.ownerButton') : t('messages.clientButton')}
+            onPress={() => router.push('/messages')} />
+        ) : null}
         {profile?.role === 'client' ? (
-          <Button kind="secondary" label={t('settings.switchOrg')} onPress={() => router.push('/onboarding/client')} />
+          <>
+            <Button kind="secondary" label={t('settings.switchOrg')} onPress={() => router.push('/onboarding/client')} />
+            {/* explained on the website: another email, or delete this account and sign up as owner */}
+            <Button kind="secondary" label={t('settings.becomeOwner')}
+              onPress={() => Linking.openURL(`https://myritmio.com/become-owner/?lang=${language}`)} />
+          </>
         ) : null}
         <Button kind="secondary" label={t('settings.signOut')}
           onPress={async () => { await signOut(); router.replace('/'); }} />

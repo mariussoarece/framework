@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyRitmio · Become an owner</title>
+<style>
+  :root { color-scheme: light dark; --accent: #4F7D6B; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         background: #F4F1EC; color: #2B2B2B; line-height: 1.55; }
+  @media (prefers-color-scheme: dark) { body { background: #1E1F1D; color: #EDEDED; } .card { background: #2A2B28 !important; } }
+  main { max-width: 640px; margin: 0 auto; padding: 32px 20px 48px; }
+  h1 { font-size: 28px; margin: 0 0 8px; }
+  h2 { font-size: 20px; margin: 0 0 8px; }
+  .card { background: #FFFFFF; border-radius: 18px; padding: 20px; margin: 18px 0; box-shadow: 0 4px 18px rgba(0,0,0,.06); }
+  .note { border-left: 4px solid #C77700; padding: 2px 0 2px 12px; }
+  ol { padding-left: 22px; } li { margin: 6px 0; }
+  .lang { text-align: right; font-size: 14px; } .lang a { color: var(--accent); }
+  [data-lang] { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <p class="lang"><a href="?lang=en">English</a> · <a href="?lang=ro">Română</a></p>
+
+  <div data-lang="en">
+    <h1>Become an owner</h1>
+    <p>An account in MyRitmio is either a <b>client</b> of one organization or the <b>owner</b> of one.
+       To open your own organization (yoga, kinesiology, fitness, martial arts…) choose one of these two ways.</p>
+
+    <div class="card">
+      <h2>1. Use another email (keeps your client account)</h2>
+      <ol>
+        <li>In the app: <b>Settings → Sign out</b>.</li>
+        <li>Choose <b>I run a business</b> and create an account with a <b>different email</b>.</li>
+        <li>Create your organization. The first month is free.</li>
+      </ol>
+      <p class="note">Notifications go only to the account signed in on the phone. While you are signed in as
+        owner you will <b>not</b> get the notifications of your client account (booking confirmations,
+        class reminders, messages from your trainer), and the other way round. To see them, sign out and
+        sign in with the other email.</p>
+    </div>
+
+    <div class="card">
+      <h2>2. Turn this email into an owner account</h2>
+      <ol>
+        <li>In the app: <b>Settings → Delete my account</b>. Your client account, its bookings and history
+            are deleted.</li>
+        <li>Open the app again, choose <b>I run a business</b> and create an account with the <b>same email</b>.</li>
+        <li>Confirm the email we send you, then create your organization.</li>
+      </ol>
+      <p class="note">You stop being a client of your current organization. If you still want to attend its
+        classes, use way 1 instead.</p>
+    </div>
+
+    <p>Questions? Write to <a href="mailto:contact@myritmio.com">contact@myritmio.com</a>.</p>
+  </div>
+
+  <div data-lang="ro">
+    <h1>Devino proprietar</h1>
+    <p>Un cont MyRitmio este fie <b>client</b> al unei organizații, fie <b>proprietarul</b> uneia.
+       Ca să-ți deschizi propria organizație (yoga, kinetoterapie, fitness, arte marțiale…), alege una dintre aceste două variante.</p>
+
+    <div class="card">
+      <h2>1. Folosește alt email (păstrezi contul de client)</h2>
+      <ol>
+        <li>În aplicație: <b>Setări → Deconectare</b>.</li>
+        <li>Alege <b>Am o afacere</b> și creează un cont cu un <b>alt email</b>.</li>
+        <li>Creează-ți organizația. Prima lună este gratuită.</li>
+      </ol>
+      <p class="note">Notificările ajung doar la contul conectat pe telefon. Cât timp ești conectat ca proprietar
+        <b>nu</b> primești notificările contului de client (confirmări de rezervare, reminder înainte de oră,
+        mesaje de la instructor) și invers. Ca să le vezi, ieși din cont și intră cu celălalt email.</p>
+    </div>
+
+    <div class="card">
+      <h2>2. Transformă acest email în cont de proprietar</h2>
+      <ol>
+        <li>În aplicație: <b>Setări → Șterge-mi contul</b>. Contul de client, rezervările și istoricul lui
+            se șterg.</li>
+        <li>Deschide din nou aplicația, alege <b>Am o afacere</b> și creează un cont cu <b>același email</b>.</li>
+        <li>Confirmă emailul pe care ți-l trimitem, apoi creează-ți organizația.</li>
+      </ol>
+      <p class="note">Nu mai ești client al organizației actuale. Dacă vrei să participi în continuare la orele ei,
+        alege varianta 1.</p>
+    </div>
+
+    <p>Întrebări? Scrie-ne la <a href="mailto:contact@myritmio.com">contact@myritmio.com</a>.</p>
+  </div>
+</main>
+<script>
+  var q = new URLSearchParams(location.search).get('lang');
+  var lang = q === 'ro' || q === 'en' ? q : ((navigator.language || '').toLowerCase().indexOf('ro') === 0 ? 'ro' : 'en');
+  document.documentElement.lang = lang;
+  document.querySelector('[data-lang="' + lang + '"]').style.display = 'block';
+</script>
+</body>
+</html>

@@ -416,3 +416,15 @@ export async function adminReports(): Promise<AdminReport[]> {
 export async function resolveReport(id: string): Promise<void> {
   check(await supabase.rpc('resolve_report', { p_id: id }));
 }
+
+// Messages from an owner to their clients (push + list in the app).
+export type Announcement = { id: string; title: string; body: string; created_at: string };
+
+export async function listAnnouncements(orgId: string): Promise<Announcement[]> {
+  return check(await supabase.from('announcements').select('id, title, body, created_at')
+    .eq('organization_id', orgId).order('created_at', { ascending: false }).limit(50)) as Announcement[];
+}
+
+export async function sendAnnouncement(title: string, body: string): Promise<void> {
+  check(await supabase.rpc('send_announcement', { p_title: title, p_body: body }));
+}
