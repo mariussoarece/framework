@@ -22,6 +22,13 @@ const TEXT = {
       + 'You can keep using the app with {default}: open the app and choose "Continue with {default}", '
       + 'or join another organization with the code your trainer gives you.\n\n'
       + 'Any upcoming paid sessions have been refunded.\n\n— {default}',
+    device_unknown: 'an unknown device',
+    confirm_subject: 'Confirm your email',
+    confirm_body: 'Hello,\n\nTo finish creating your account, open this link (valid for 24 hours):\n{link}\n\nIf you did not create an account, ignore this email: without the link the account stays inactive.\n\nRequested from: {device}',
+    signup_existing_subject: 'Someone tried to create an account with your email',
+    signup_existing_body: 'Hello,\n\nOn {when}, someone tried to create a new account with this email address, from {device}.\n\nIf it was you: you already have an account. Sign in, or use "Forgot password" in the app.\n\nIf it was not you: you do not need to do anything. Nobody can enter your account without your password, and no new account was created.',
+    recover_subject: 'Reset your password',
+    recover_body: 'Hello,\n\nOn {when}, a new password was requested for your account, from {device}.\n\nTo choose a new password, open this link (valid for one hour, works once):\n{link}\n\nIf it was not you: ignore this email. Your password stays the same.',
     owner_closed_subject: '{org} was closed',
     owner_closed_body: 'Hello,\n\n{org} was closed by the administrator. Its workouts, pictures and upcoming bookings were removed, and your clients were told by email.\n\nYour login still works: sign in with this email to create a new organization.\n\n— {default}',
     account_deleted_subject: 'Your account was deleted',
@@ -48,6 +55,13 @@ const TEXT = {
       + 'Poți folosi în continuare aplicația cu {default}: deschide aplicația și alege „Continuă cu {default}”, '
       + 'sau alătură-te altei organizații cu codul primit de la antrenorul tău.\n\n'
       + 'Ședințele plătite programate au fost rambursate.\n\n— {default}',
+    device_unknown: 'un dispozitiv necunoscut',
+    confirm_subject: 'Confirmă-ți emailul',
+    confirm_body: 'Bună,\n\nCa să termini crearea contului, deschide acest link (valabil 24 de ore):\n{link}\n\nDacă nu tu ai creat contul, ignoră acest email: fără link, contul rămâne inactiv.\n\nCerut de pe: {device}',
+    signup_existing_subject: 'Cineva a încercat să creeze un cont cu emailul tău',
+    signup_existing_body: 'Bună,\n\nPe {when}, cineva a încercat să creeze un cont nou cu această adresă de email, de pe {device}.\n\nDacă ai fost tu: ai deja un cont. Intră în cont sau folosește „Am uitat parola” în aplicație.\n\nDacă nu ai fost tu: nu trebuie să faci nimic. Nimeni nu poate intra în contul tău fără parolă și nu s-a creat niciun cont nou.',
+    recover_subject: 'Resetează-ți parola',
+    recover_body: 'Bună,\n\nPe {when}, s-a cerut o parolă nouă pentru contul tău, de pe {device}.\n\nCa să alegi o parolă nouă, deschide acest link (valabil o oră, o singură dată):\n{link}\n\nDacă nu ai fost tu: ignoră acest email. Parola ta rămâne aceeași.',
     owner_closed_subject: '{org} a fost închisă',
     owner_closed_body: 'Bună,\n\n{org} a fost închisă de administrator. Exercițiile, imaginile și rezervările viitoare au fost șterse, iar clienții tăi au fost anunțați prin email.\n\nContul tău rămâne: intră cu acest email ca să creezi o organizație nouă.\n\n— {default}',
     account_deleted_subject: 'Contul tău a fost șters',

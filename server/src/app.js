@@ -6,6 +6,7 @@ import { eq } from './db.js';
 import { uploadMedia, mediaUrls, sendOriginal } from './media.js';
 import { bookingPayment, connectLink, connectStatus, stripeWebhook } from './payments.js';
 import { closeOrganization, deleteMyAccount } from './account.js';
+import { createAuthMail } from './authmail.js';
 
 async function authenticate(ctx, req) {
   const m = /^Bearer (.+)$/i.exec(req.headers.authorization || '');
@@ -26,6 +27,11 @@ export function createApp(ctx) {
   const authed = (fn) => async (req, res, params, url) => fn(req, res, params, url, await authenticate(ctx, req));
 
   r.add('GET', '/api/health', async () => ({ ok: true }));
+
+  // creating an account / forgot password (no login needed; our own emails)
+  const authMail = createAuthMail(ctx);
+  r.add('POST', '/api/auth/signup', async (req) => authMail.signup(req, await readJson(req)));
+  r.add('POST', '/api/auth/recover', async (req) => authMail.recover(req, await readJson(req)));
 
   // media
   r.add('POST', '/api/media', authed(async (req, res, _p, url, user) => {

@@ -5,11 +5,13 @@ import { Button, Field, Message, Muted, Screen, Title } from '../src/components/
 import { useI18n } from '../src/i18n/I18nProvider';
 import { supabase } from '../src/lib/supabase';
 import { useSession } from '../src/lib/session';
+import { api } from '../src/lib/api';
+import { deviceInfo } from '../src/lib/device';
 
 const validEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
 export default function Auth() {
-  const { t, tError } = useI18n();
+  const { t, tError, language } = useI18n();
   const params = useLocalSearchParams<{ role?: string }>();
   const { refresh } = useSession();
   const [mode, setMode] = useState<'signIn' | 'signUp'>(params.role === 'owner' ? 'signUp' : 'signIn');
@@ -32,10 +34,9 @@ export default function Auth() {
         await refresh();
         router.replace('/');
       } else {
-        const { data, error: err } = await supabase.auth.signUp({ email: e, password });
-        if (err) throw err;
-        if (data.session) { await refresh(); router.replace('/'); }
-        else { setInfo(t('auth.checkEmail')); setMode('signIn'); }
+        await api.signUp(e, password, language, deviceInfo());
+        setInfo(t('auth.checkEmail'));
+        setMode('signIn');
       }
     } catch (err) {
       setError(tError(err));
@@ -50,8 +51,7 @@ export default function Auth() {
     if (!validEmail(e)) return setError(t('auth.emailInvalid'));
     setBusy(true);
     try {
-      const { error: err } = await supabase.auth.resetPasswordForEmail(e);
-      if (err) throw err;
+      await api.recover(e, language, deviceInfo());
       setInfo(t('auth.resetSent'));
     } catch (err) {
       setError(tError(err));

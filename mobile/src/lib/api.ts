@@ -53,6 +53,11 @@ export async function mediaLinks(id: string, fresh = false): Promise<MediaLinks>
 }
 
 export const api = {
+  // creating an account and "Forgot password": the server sends the emails (see server/src/authmail.js)
+  signUp: (email: string, password: string, language: string, device: unknown) =>
+    call<{ status: string }>('POST', '/api/auth/signup', { email, password, language, device }),
+  recover: (email: string, language: string, device: unknown) =>
+    call<{ status: string }>('POST', '/api/auth/recover', { email, language, device }),
   deleteAccount: () => call<{ deleted: boolean }>('DELETE', '/api/account'),
   testPush: () => call<{ devices: number; sent: number }>('POST', '/api/push/test'),
   closeOrganization: (id: string) =>

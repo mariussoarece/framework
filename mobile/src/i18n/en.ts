@@ -326,6 +326,8 @@ export const en = {
   'error.upload_failed': "The upload was interrupted. Check your internet and try again.",
   'save.notSaved': "Not saved",
   'save.mediaFailed': "The workout was saved, but {count} picture(s)/video(s) could not be uploaded:\n{reason}\n\nOpen the workout and add them again.",
+  'error.too_many_requests': "Too many attempts. Please wait a little and try again.",
+  'error.signup_failed': "The account could not be created right now. Please try again in a few minutes.",
   'error.network': 'No connection to the server. Check your internet and try again.',
 } as const;
 
