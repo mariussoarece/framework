@@ -4,7 +4,8 @@ After these steps:
 - the app talks to **https://api.myritmio.com** (the old https://api.purebalanceyoga.ro keeps
   working too, for builds that still use it);
 - the app's emails come from **no-reply@myritmio.com**, sent by the Postfix on this VPS,
-  signed with DKIM; the websites keep sending from purebalanceyoga.ro, also signed.
+  signed with DKIM; the websites keep sending from purebalanceyoga.ro, also signed (each domain
+  with its own key).
 
 Server IP: `45.10.163.167`. Run the VPS commands as `yogaadmin` (they need sudo),
 except where it says `frame`.
@@ -28,7 +29,7 @@ For the websites' emails, also on **purebalanceyoga.ro**:
 |---|---|---|
 | TXT | `@` | `v=spf1 ip4:45.10.163.167 ~all` |
 | TXT | `_dmarc` | `v=DMARC1; p=none; adkim=r; aspf=r` |
-| TXT | `mail._domainkey` | (the same value as for myritmio.com, step 5) |
+| TXT | `mail._domainkey` | (its own value, step 5) |
 
 Contabo panel → the VPS → **Reverse DNS** for `45.10.163.167` → `mail.myritmio.com`.
 
@@ -77,18 +78,36 @@ sudo ufw allow from 172.16.0.0/12 to any port 25 proto tcp comment 'docker -> po
 From the internet port 25 stays closed (`inet_interfaces = all` is safe because of this,
 and only `mynetworks` may send through Postfix).
 
-## 5. DKIM (OpenDKIM), one key for both domains
+## 5. DKIM (OpenDKIM), a separate key for each domain
 
 ```bash
 sudo apt-get install -y opendkim opendkim-tools
-sudo mkdir -p /etc/opendkim/keys
-sudo opendkim-genkey -b 2048 -d myritmio.com -s mail -D /etc/opendkim/keys
-sudo chown -R opendkim:opendkim /etc/opendkim
-sudo chmod 600 /etc/opendkim/keys/mail.private
+for d in myritmio.com purebalanceyoga.ro; do
+  sudo mkdir -p /etc/opendkim/keys/$d
+  sudo opendkim-genkey -b 2048 -d $d -s mail -D /etc/opendkim/keys/$d
+done
 
-sudo sed -i -E 's/^(Socket|Domain|Selector|KeyFile|Mode)\b/#\1/' /etc/opendkim.conf
-printf '%s\n' 'Domain myritmio.com,purebalanceyoga.ro' 'Selector mail' \
-  'KeyFile /etc/opendkim/keys/mail.private' \
+# which key signs which domain
+printf '%s\n' \
+  'mail._domainkey.myritmio.com myritmio.com:mail:/etc/opendkim/keys/myritmio.com/mail.private' \
+  'mail._domainkey.purebalanceyoga.ro purebalanceyoga.ro:mail:/etc/opendkim/keys/purebalanceyoga.ro/mail.private' \
+  | sudo tee /etc/opendkim/key.table
+printf '%s\n' \
+  '*@myritmio.com mail._domainkey.myritmio.com' \
+  '*@purebalanceyoga.ro mail._domainkey.purebalanceyoga.ro' \
+  | sudo tee /etc/opendkim/signing.table
+# who may have their emails signed: the VPS itself and the Docker containers
+printf '%s\n' 127.0.0.1 ::1 localhost 172.16.0.0/12 | sudo tee /etc/opendkim/trusted.hosts
+
+sudo chown -R opendkim:opendkim /etc/opendkim
+sudo chmod 600 /etc/opendkim/keys/*/mail.private
+
+sudo sed -i -E 's/^(Socket|Domain|Selector|KeyFile|KeyTable|SigningTable|InternalHosts|ExternalIgnoreList|Mode)\b/#\1/' /etc/opendkim.conf
+printf '%s\n' \
+  'KeyTable file:/etc/opendkim/key.table' \
+  'SigningTable refile:/etc/opendkim/signing.table' \
+  'InternalHosts refile:/etc/opendkim/trusted.hosts' \
+  'ExternalIgnoreList refile:/etc/opendkim/trusted.hosts' \
   'Socket inet:8891@localhost' 'Mode sv' | sudo tee -a /etc/opendkim.conf
 sudo sed -i -E 's|^#?SOCKET=.*|SOCKET=inet:8891@localhost|' /etc/default/opendkim
 [ -x /lib/opendkim/opendkim.service.generate ] && sudo /lib/opendkim/opendkim.service.generate
@@ -101,10 +120,22 @@ sudo postconf -e 'milter_default_action = accept' 'milter_protocol = 6' \
   'smtpd_milters = inet:localhost:8891' 'non_smtpd_milters = inet:localhost:8891'
 sudo systemctl restart postfix
 
-# the value for the TXT records "mail._domainkey" (one line), on BOTH domains
-sudo cat /etc/opendkim/keys/mail.txt | tr -d '\n\t' \
-  | sed -E 's/.*\( *//; s/ *\).*//; s/" *"//g; s/"//g'; echo
+# the value of each TXT record "mail._domainkey" (one line each)
+for d in myritmio.com purebalanceyoga.ro; do
+  echo "== $d"
+  sudo cat /etc/opendkim/keys/$d/mail.txt | tr -d '\n\t' \
+    | sed -E 's/.*\( *//; s/ *\).*//; s/" *"//g; s/"//g'; echo
+done
 ```
+Put the first value in the `mail._domainkey` TXT record of **myritmio.com**, the second in the
+`mail._domainkey` TXT record of **purebalanceyoga.ro**.
+
+Check that each record is published (after a few minutes):
+```bash
+sudo opendkim-testkey -d myritmio.com -s mail -vvv
+sudo opendkim-testkey -d purebalanceyoga.ro -s mail -vvv     # both must end with "key OK"
+```
+("key not secure" only means the domain has no DNSSEC; it is fine.)
 
 ## 6. The app's server (`/opt/framework/infra/.env`, as `frame`)
 
