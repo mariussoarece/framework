@@ -114,7 +114,7 @@ export const handlers = {
     }
   },
 
-  // 30 minutes before a confirmed session (queued by queue_reminders()).
+  // 1 hour before a confirmed session (queued by queue_reminders()).
   async 'booking.reminder'(ctx, p) {
     const bc = await bookingContext(ctx, p.booking_id);
     if (!bc || bc.b.status !== 'accepted') return;
