@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:36290220554:android:895b54d4ac8bb0e90605f3",
+        "android_client_info": {
+          "package_name": "com.myritmio.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXK4Zq_pElmvqU9SZ8qQOfQHDBdbzo_IA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:36290220554:android:37691607571a19790605f3",
         "android_client_info": {
           "package_name": "com.yogabythesofa.app"
