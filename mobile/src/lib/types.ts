@@ -7,6 +7,7 @@ export type Profile = {
   id: string;
   email: string | null;
   display_name: string | null;
+  phone?: string | null;            // migration 018; filled in by the client in Settings
   language: 'en' | 'ro';
   role: Role;
   organization_id: string | null;

@@ -1,9 +1,9 @@
 // Language, video quality, join code (owners), switch organization (clients),
 // sign out and Delete my account.
 import React, { useState } from 'react';
-import { Alert, Linking, View } from 'react-native';
+import { Alert, View } from 'react-native';
 import { router } from 'expo-router';
-import { Button, Choice, Message, Muted, Screen } from '../src/components/ui';
+import { Button, Choice, Field, Message, Muted, Screen } from '../src/components/ui';
 import { useI18n } from '../src/i18n/I18nProvider';
 import { LANGUAGES, type Language } from '../src/i18n/translate';
 import { api } from '../src/lib/api';
@@ -17,6 +17,26 @@ export default function Settings() {
   const { session, profile, org, refresh, signOut } = useSession();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // name and phone: the organization's owner sees them in "My clients"
+  const [name, setName] = useState(profile?.display_name ?? '');
+  const [phone, setPhone] = useState(profile?.phone ?? '');
+  const [savingDetails, setSavingDetails] = useState(false);
+  const detailsChanged = name.trim() !== (profile?.display_name ?? '') || phone.trim() !== (profile?.phone ?? '');
+  async function saveDetails() {
+    if (!profile) return;
+    const cleanPhone = phone.trim();
+    if (cleanPhone && !/^[0-9+() .-]{3,30}$/.test(cleanPhone)) {
+      Alert.alert(t('save.notSaved'), t('settings.phoneInvalid'));
+      return;
+    }
+    setSavingDetails(true);
+    const { error: err } = await supabase.from('profiles')
+      .update({ display_name: name.trim() || null, phone: cleanPhone || null }).eq('id', profile.id);
+    setSavingDetails(false);
+    if (err) Alert.alert(t('save.notSaved'), tError(err));
+    else { await refresh(); Alert.alert(t('settings.detailsSaved')); }
+  }
 
   async function saveProfile(patch: Partial<{ language: Language; video_quality: VideoQuality }>) {
     if (!profile) return;
@@ -87,6 +107,20 @@ export default function Settings() {
         <Message kind="info" text={t('settings.joinCode', { code: org.join_code })} />
       ) : null}
 
+      {profile && profile.role !== 'super_admin' ? (
+        <View style={{ gap: 8 }}>
+          <Muted style={{ fontWeight: '600' }}>{t('settings.details')}</Muted>
+          <Field label={t('settings.name')} value={name} onChangeText={setName} maxLength={80}
+            autoComplete="name" textContentType="name" />
+          <Field label={t('settings.phone')} value={phone} onChangeText={setPhone} maxLength={30}
+            keyboardType="phone-pad" autoComplete="tel" textContentType="telephoneNumber"
+            hint={profile.role === 'client' ? t('settings.detailsHint') : undefined} />
+          {detailsChanged ? (
+            <Button label={t('settings.saveDetails')} onPress={saveDetails} busy={savingDetails} />
+          ) : null}
+        </View>
+      ) : null}
+
       <Muted style={{ fontWeight: '600' }}>{t('settings.language')}</Muted>
       {LANGUAGES.map((l) => (
         <Choice key={l.code} title={l.label} selected={language === l.code} onPress={() => changeLanguage(l.code)} />
@@ -104,6 +138,9 @@ export default function Settings() {
 
       <View style={{ gap: 12, marginTop: 16 }}>
         <Button kind="secondary" label={t('push.test')} onPress={testPush} busy={testing} />
+        {profile?.role === 'owner' ? (
+          <Button kind="secondary" label={t('clients.button')} onPress={() => router.push('/clients')} />
+        ) : null}
         {profile?.role === 'owner' || profile?.role === 'client' ? (
           <Button kind="secondary" label={profile.role === 'owner' ? t('messages.ownerButton') : t('messages.clientButton')}
             onPress={() => router.push('/messages')} />
@@ -111,9 +148,7 @@ export default function Settings() {
         {profile?.role === 'client' ? (
           <>
             <Button kind="secondary" label={t('settings.switchOrg')} onPress={() => router.push('/onboarding/client')} />
-            {/* explained on the website: another email, or delete this account and sign up as owner */}
-            <Button kind="secondary" label={t('settings.becomeOwner')}
-              onPress={() => Linking.openURL(`https://myritmio.com/become-owner/?lang=${language}`)} />
+            <Button kind="secondary" label={t('settings.becomeOwner')} onPress={() => router.push('/become-owner')} />
           </>
         ) : null}
         <Button kind="secondary" label={t('settings.signOut')}

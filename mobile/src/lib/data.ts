@@ -428,3 +428,13 @@ export async function listAnnouncements(orgId: string): Promise<Announcement[]> 
 export async function sendAnnouncement(title: string, body: string): Promise<void> {
   check(await supabase.rpc('send_announcement', { p_title: title, p_body: body }));
 }
+
+// The owner's clients (my_clients(), migration 018).
+export type ClientRow = {
+  id: string; display_name: string | null; email: string | null; phone: string | null;
+  joined_at: string; booked: number; upcoming: number; pending: number;
+};
+
+export async function myClients(): Promise<ClientRow[]> {
+  return check(await supabase.rpc('my_clients')) as ClientRow[];
+}
