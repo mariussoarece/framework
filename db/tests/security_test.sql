@@ -341,5 +341,12 @@ select test.ok((select count(*) from public.organizations where join_code = 'yog
                    = 'new.owner@example.com',
                'the closed one stays in the history; the new one keeps its owner email');
 
+-- the server must be able to read every table (migration 020; announcements once failed)
+reset role;
+select test.ok(not exists (select 1 from pg_class c
+                            where c.relnamespace = 'public'::regnamespace and c.relkind = 'r'
+                              and not has_table_privilege('service_role', c.oid, 'select')),
+               'the server (service_role) can read every table');
+
 reset role;
 \echo 'All tests passed.'
