@@ -7,6 +7,9 @@ import { Button, Choice, Field, Message, Muted, Screen } from '../src/components
 import { useI18n } from '../src/i18n/I18nProvider';
 import { LANGUAGES, type Language } from '../src/i18n/translate';
 import { api } from '../src/lib/api';
+import { OptionField } from '../src/components/pickers';
+import { setOrganizationTimezone } from '../src/lib/data';
+import { deviceTimeZone, TIME_ZONES } from '../src/lib/schedule';
 import { supabase } from '../src/lib/supabase';
 import { useSession } from '../src/lib/session';
 import type { VideoQuality } from '../src/lib/types';
@@ -35,6 +38,13 @@ export default function Settings() {
     setSavingDetails(false);
     if (err) Alert.alert(t('save.notSaved'), tError(err));
     else { await refresh(); Alert.alert(t('settings.detailsSaved')); }
+  }
+
+  // the organization's time zone: all class times are in it
+  const zones = [...new Set([org?.timezone, deviceTimeZone(), ...TIME_ZONES].filter(Boolean) as string[])];
+  async function changeTimezone(tz: string) {
+    if (!org || tz === org.timezone) return;
+    try { await setOrganizationTimezone(org.id, tz); await refresh(); } catch (err) { Alert.alert(t('save.notSaved'), tError(err)); }
   }
 
   async function saveProfile(patch: Partial<{ language: Language; video_quality: VideoQuality }>) {
@@ -104,6 +114,12 @@ export default function Settings() {
         </View>
       ) : null}
 
+      {profile?.role === 'owner' && org ? (
+        <OptionField label={t('settings.timezone')} value={Math.max(0, zones.indexOf(org.timezone))}
+          options={zones.map((_, i) => i)} format={(i) => zones[i].replace(/_/g, ' ')}
+          onChange={(i) => changeTimezone(zones[i])} />
+      ) : null}
+
       <Muted style={{ fontWeight: '600' }}>{t('settings.language')}</Muted>
       {LANGUAGES.map((l) => (
         <Choice key={l.code} title={l.label} selected={language === l.code} onPress={() => changeLanguage(l.code)} />
@@ -122,6 +138,9 @@ export default function Settings() {
       <View style={{ gap: 12, marginTop: 16 }}>
         {profile?.role === 'owner' ? (
           <Button kind="secondary" label={t('clients.button')} onPress={() => router.push('/clients')} />
+        ) : null}
+        {profile?.role === 'owner' || profile?.role === 'client' ? (
+          <Button kind="secondary" label={t('memberships.title')} onPress={() => router.push('/memberships')} />
         ) : null}
         {profile?.role === 'owner' || profile?.role === 'client' ? (
           <Button kind="secondary" label={profile.role === 'owner' ? t('messages.ownerButton') : t('messages.clientButton')}

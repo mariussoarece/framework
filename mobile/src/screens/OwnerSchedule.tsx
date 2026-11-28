@@ -18,7 +18,7 @@ import { WeekView } from './WeekView';
 import { useI18n } from '../i18n/I18nProvider';
 import {
   addDayOff, blockSlot, cancelBooking, daySlots, decideBooking, deleteAvailability, deleteDayOff, listAvailability,
-  listBookings, listDaysOff, saveAvailability, type Availability, type Booking, type DayOff, type DaySlot,
+  listBookings, listDaysOff, saveAvailability, listPlans, plansOfClass, setClassPlans, type MembershipPlan, type Availability, type Booking, type DayOff, type DaySlot,
   type ScheduleKind,
 } from '../lib/data';
 import {
@@ -66,6 +66,9 @@ export function OwnerSchedule({ theme, initialTab }: { theme: Theme; initialTab?
   const editorRef = useRef<EditorHandle | null>(null);
   const keepEditor = useCallback((e: EditorHandle) => { editorRef.current = e; }, []);
   const [saving, setSaving] = useState<string | null>(null);
+  // memberships: the organization's plans, and those chosen for the class in the form
+  const [plans, setPlans] = useState<MembershipPlan[]>([]);
+  const [formPlans, setFormPlans] = useState<string[]>([]);
   const [newDay, setNewDay] = useState('');
   const [blockDay, setBlockDay] = useState('');
   const [blockList, setBlockList] = useState<DaySlot[] | null>(null);
@@ -83,17 +86,18 @@ export function OwnerSchedule({ theme, initialTab }: { theme: Theme; initialTab?
 
   const load = useCallback(async () => {
     try {
-      const [b, h, d] = await Promise.all([
+      const [b, h, d, p] = await Promise.all([
         listBookings({ owner: true, upcomingOnly: true }),
         listAvailability(),
         listDaysOff(today(tz)),
+        org ? listPlans(org.id).catch(() => []) : Promise.resolve([]),
       ]);
-      setBookings(b); setEntries(h); setDaysOff(d);
+      setBookings(b); setEntries(h); setDaysOff(d); setPlans(p);
       setReloadKey((k) => k + 1);
     } catch (err) {
       setError(tError(err));
     }
-  }, [tz, tError]);
+  }, [tz, tError, org]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -166,7 +170,7 @@ export function OwnerSchedule({ theme, initialTab }: { theme: Theme; initialTab?
       }
       const description = isClass && editorRef.current ? await editorDoc(editorRef.current) : null;
       try {
-        await saveAvailability({
+        const saved = await saveAvailability({
           id: form.id, weekdays: form.weekdays, kind: form.kind,
           title: isClass ? form.title.trim() : null,
           instructor: isClass ? (form.instructor.trim() || null) : null,
@@ -174,6 +178,9 @@ export function OwnerSchedule({ theme, initialTab }: { theme: Theme; initialTab?
           valid_from: form.startsOn, valid_until: until,
           description, image_media_id: imageId, currency: form.currency,
         });
+        if (isClass && plans.length) {
+          for (const row of saved ?? []) await setClassPlans(row.id, formPlans);
+        }
       } finally {
         setSaving(null);
       }
@@ -183,6 +190,8 @@ export function OwnerSchedule({ theme, initialTab }: { theme: Theme; initialTab?
 
   function editEntry(a: Availability) {
     setPicture({ mediaId: a.image_media_id ?? null, picked: null });
+    setFormPlans([]);
+    if (a.kind === 'class') plansOfClass(a.id).then(setFormPlans).catch(() => {});
     setForm({
       id: a.id, kind: a.kind, weekdays: [a.weekday], title: a.title ?? '', instructor: a.instructor ?? '',
       from: shortTime(a.start_time), to: shortTime(a.end_time), length: String(a.slot_minutes),
@@ -348,7 +357,7 @@ export function OwnerSchedule({ theme, initialTab }: { theme: Theme; initialTab?
                     <Choice theme={theme} title={t('schedule.typeOpen')} hint={t('schedule.typeOpenHint')}
                       selected={form.kind === 'open'} onPress={() => setForm({ ...emptyForm('open'), weekdays: form.weekdays })} />
                     <Choice theme={theme} title={t('schedule.typeClass')} hint={t('schedule.typeClassHint')}
-                      selected={form.kind === 'class'} onPress={() => { setPicture({ mediaId: null, picked: null }); setForm({ ...emptyForm('class'), weekdays: form.weekdays }); }} />
+                      selected={form.kind === 'class'} onPress={() => { setPicture({ mediaId: null, picked: null }); setFormPlans([]); setForm({ ...emptyForm('class'), weekdays: form.weekdays }); }} />
                   </>
                 ) : null}
 
@@ -403,6 +412,16 @@ export function OwnerSchedule({ theme, initialTab }: { theme: Theme; initialTab?
                     options={CURRENCIES.map((_, i) => i)} format={(i) => CURRENCIES[i]}
                     onChange={(i) => setForm({ ...form, currency: CURRENCIES[i] })} />
                 </View>
+                {form.kind === 'class' && plans.some((p) => p.active || formPlans.includes(p.id)) ? (
+                  <View style={{ gap: 6 }}>
+                    <Text style={[styles.label, { color: theme.text }]}>{t('memberships.inClass')}</Text>
+                    {plans.filter((p) => p.active || formPlans.includes(p.id)).map((p) => (
+                      <Choice key={p.id} theme={theme} title={p.name} selected={formPlans.includes(p.id)}
+                        onPress={() => setFormPlans(formPlans.includes(p.id)
+                          ? formPlans.filter((x) => x !== p.id) : [...formPlans, p.id])} />
+                    ))}
+                  </View>
+                ) : form.kind === 'class' ? <Muted theme={theme}>{t('memberships.noPlansForClass')}</Muted> : null}
                 {!paid ? <Muted theme={theme}>{t('schedule.priceNone')}</Muted> : null}
 
                 <Text style={[styles.label, { color: theme.text }]}>{t('schedule.repeat')}</Text>

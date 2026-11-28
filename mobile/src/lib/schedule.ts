@@ -28,6 +28,20 @@ export function parseMoney(text: string): number | null {
 // Currencies an owner can choose for a class or open hours (most used first).
 export const CURRENCIES = ['EUR', 'RON', 'USD', 'GBP', 'CHF', 'HUF', 'PLN', 'BGN', 'MDL', 'VND'] as const;
 
+// The phone's own time zone, e.g. "Asia/Ho_Chi_Minh".
+export function deviceTimeZone(): string {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Bucharest'; } catch { return 'Europe/Bucharest'; }
+}
+
+// Time zones an owner can choose (the phone's own is added in front when missing).
+export const TIME_ZONES = [
+  'Europe/Bucharest', 'Europe/Chisinau', 'Europe/London', 'Europe/Dublin', 'Europe/Lisbon', 'Europe/Madrid',
+  'Europe/Paris', 'Europe/Berlin', 'Europe/Rome', 'Europe/Vienna', 'Europe/Budapest', 'Europe/Warsaw',
+  'Europe/Athens', 'Europe/Sofia', 'Europe/Istanbul', 'Asia/Dubai', 'Asia/Ho_Chi_Minh', 'Asia/Bangkok',
+  'Asia/Singapore', 'Asia/Bali', 'Asia/Tokyo', 'Australia/Sydney', 'America/New_York', 'America/Chicago',
+  'America/Denver', 'America/Los_Angeles', 'America/Toronto', 'America/Sao_Paulo',
+];
+
 export function formatMoney(cents: number, currency: string, language: Language): string {
   return new Intl.NumberFormat(locale(language), { style: 'currency', currency, minimumFractionDigits: cents % 100 ? 2 : 0 })
     .format(cents / 100);

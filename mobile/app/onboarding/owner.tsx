@@ -4,6 +4,7 @@ import { Redirect, router } from 'expo-router';
 import { Button, Choice, Field, Message, Muted, Screen, Title } from '../../src/components/ui';
 import { useI18n } from '../../src/i18n/I18nProvider';
 import { supabase } from '../../src/lib/supabase';
+import { deviceTimeZone } from '../../src/lib/schedule';
 import { useSession } from '../../src/lib/session';
 import type { Plan } from '../../src/lib/types';
 
@@ -23,8 +24,11 @@ export default function OwnerOnboarding() {
     if (name.trim().length < 2) return setError(t('owner.nameHint'));
     setBusy(true);
     try {
-      const { error: err } = await supabase.rpc('create_organization', { p_name: name.trim(), p_plan: plan });
+      const { data: created, error: err } = await supabase.rpc('create_organization', { p_name: name.trim(), p_plan: plan });
       if (err) throw err;
+      // the organization's times follow the owner's phone (changeable in Settings)
+      const orgId = (created as { id?: string } | null)?.id;
+      if (orgId) await supabase.from('organizations').update({ timezone: deviceTimeZone() }).eq('id', orgId);
       await setPendingRole(null);
       await refresh();
       router.replace('/');

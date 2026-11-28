@@ -98,6 +98,33 @@ export const handlers = {
     }
   },
 
+  // A client asked for a membership: tell the owner.
+  async 'membership.requested'(ctx, p) {
+    const db = ctx.db.service;
+    const m = await db.one('memberships', `id=${eq(p.membership_id)}&select=organization_id,client_id,name`);
+    if (!m) return;
+    const org = await db.one('organizations', `id=${eq(m.organization_id)}&select=owner_id`);
+    const client = await db.one('profiles', `id=${eq(m.client_id)}&select=display_name,email`);
+    if (!org?.owner_id) return;
+    await ctx.push.toUser(ctx.db, org.owner_id, (l) => ({
+      ...t(l, 'membership_request', { client: client?.display_name || client?.email || '', plan: m.name }),
+      data: { type: 'membership' },
+    }));
+  },
+
+  // The owner approved or declined a membership: tell the client.
+  async 'membership.decided'(ctx, p) {
+    const db = ctx.db.service;
+    const m = await db.one('memberships', `id=${eq(p.membership_id)}&select=organization_id,client_id,name,ends_on`);
+    if (!m) return;
+    const org = await db.one('organizations', `id=${eq(m.organization_id)}&select=name`);
+    await ctx.push.toUser(ctx.db, m.client_id, (l) => ({
+      ...t(l, p.accepted ? 'membership_accepted' : 'membership_declined',
+        { org: org?.name || '', plan: m.name, until: m.ends_on || '' }),
+      data: { type: 'membership' },
+    }));
+  },
+
   // An owner's message to all the clients of the organization (send_announcement()).
   async 'announcement.created'(ctx, p) {
     const db = ctx.db.service;

@@ -271,14 +271,15 @@ export async function listAvailability(): Promise<Availability[]> {
 
 // Creates the entry on every chosen weekday (all or nothing), or updates one entry.
 // The database refuses clashes ("schedule_clash|..."), see errorText().
-export async function saveAvailability(a: AvailabilityInput): Promise<void> {
-  check(await supabase.rpc('save_availability', {
+// Returns the saved entries (one per weekday when creating), so memberships can be linked.
+export async function saveAvailability(a: AvailabilityInput): Promise<Availability[]> {
+  return check(await supabase.rpc('save_availability', {
     p_id: a.id ?? null, p_weekdays: a.weekdays, p_kind: a.kind, p_title: a.title, p_instructor: a.instructor,
     p_start: a.start, p_end: a.end, p_slot_minutes: a.slot_minutes, p_capacity: a.capacity,
     p_price_cents: a.price_cents, p_valid_from: a.valid_from, p_valid_until: a.valid_until,
     p_description: a.description ?? null, p_image_media_id: a.image_media_id ?? null,
     p_currency: a.currency ?? null,
-  }));
+  })) as Availability[];
 }
 
 // One timetable entry (e.g. a class, for its details screen).
@@ -450,4 +451,64 @@ export type ClientRow = {
 
 export async function myClients(): Promise<ClientRow[]> {
   return check(await supabase.rpc('my_clients')) as ClientRow[];
+}
+
+// ------------------------------------------------------------------ memberships (migration 023)
+export type MembershipPlan = {
+  id: string; organization_id: string; name: string; description: string | null;
+  price_cents: number; currency: string; classes: number | null; valid_days: number; active: boolean;
+};
+export type MembershipRow = {
+  id: string; client_id: string; client_name: string; client_email: string | null; plan_id: string; name: string;
+  status: 'pending' | 'active' | 'declined' | 'cancelled'; classes: number | null; valid_days: number; used: number;
+  remaining: number | null; starts_on: string | null; ends_on: string | null; expired: boolean;
+  price_cents: number; currency: string; created_at: string;
+};
+export type PlanInput = {
+  id?: string; name: string; description: string; price_cents: number; currency: string;
+  classes: number | null; valid_days: number; active: boolean;
+};
+
+export async function listPlans(orgId: string): Promise<MembershipPlan[]> {
+  return check(await supabase.from('membership_plans').select('*')
+    .eq('organization_id', orgId).order('created_at')) as MembershipPlan[];
+}
+
+export async function savePlan(p: PlanInput): Promise<void> {
+  check(await supabase.rpc('save_membership_plan', {
+    p_id: p.id ?? null, p_name: p.name, p_description: p.description, p_price_cents: p.price_cents,
+    p_currency: p.currency, p_classes: p.classes, p_valid_days: p.valid_days, p_active: p.active,
+  }));
+}
+
+// plan ids that cover a timetable entry
+export async function plansOfClass(availabilityId: string): Promise<string[]> {
+  const rows = check(await supabase.from('plan_classes').select('plan_id').eq('availability_id', availabilityId)) as
+    { plan_id: string }[];
+  return rows.map((r) => r.plan_id);
+}
+
+export async function setClassPlans(availabilityId: string, planIds: string[]): Promise<void> {
+  check(await supabase.rpc('set_class_plans', { p_availability: availabilityId, p_plans: planIds }));
+}
+
+export async function requestMembership(planId: string): Promise<void> {
+  check(await supabase.rpc('request_membership', { p_plan: planId }));
+}
+
+export async function decideMembership(id: string, accept: boolean): Promise<void> {
+  check(await supabase.rpc('decide_membership', { p_id: id, p_accept: accept }));
+}
+
+export async function cancelMembership(id: string): Promise<void> {
+  check(await supabase.rpc('cancel_membership', { p_id: id }));
+}
+
+export async function listMemberships(clientId?: string): Promise<MembershipRow[]> {
+  return check(await supabase.rpc('list_memberships', { p_client: clientId ?? null })) as MembershipRow[];
+}
+
+// The organization's time zone (owner).
+export async function setOrganizationTimezone(orgId: string, timezone: string): Promise<void> {
+  check(await supabase.from('organizations').update({ timezone }).eq('id', orgId));
 }

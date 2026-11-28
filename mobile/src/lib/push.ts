@@ -82,6 +82,7 @@ export function routeFor(data: Record<string, unknown> | undefined): string | nu
     case 'workout': return typeof data.workout_id === 'string' ? `/workout/${data.workout_id}` : '/workouts';
     case 'workouts': return '/workouts';
     case 'announcement': return '/messages';
+    case 'membership': return '/memberships';
     default: return null;
   }
 }

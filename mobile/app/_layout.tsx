@@ -33,6 +33,7 @@ function Routes() {
       <Stack.Screen name="section-edit" options={{ headerShown: true, title: t('sections.edit'), presentation: 'modal' }} />
       <Stack.Screen name="workout-edit" options={{ headerShown: true, title: t('workouts.add'), presentation: 'modal' }} />
       <Stack.Screen name="class/[id]" options={{ headerShown: true, title: '', headerBackTitle: t('common.back') }} />
+      <Stack.Screen name="memberships" options={{ headerShown: true, title: t('memberships.title'), headerBackTitle: t('common.back') }} />
       <Stack.Screen name="clients" options={{ headerShown: true, title: t('clients.title'), headerBackTitle: t('common.back') }} />
       <Stack.Screen name="become-owner" options={{ headerShown: true, title: t('becomeOwner.title'), headerBackTitle: t('common.back') }} />
       <Stack.Screen name="messages" options={{ headerShown: true, title: t('messages.title'), headerBackTitle: t('common.back') }} />
