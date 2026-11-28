@@ -19,7 +19,12 @@
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.RECORD_AUDIO"
-      ]
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundImage": "./assets/images/adaptive-background.png",
+        "monochromeImage": "./assets/images/adaptive-monochrome.png"
+      }
     },
     "locales": {
       "en": "./locales/en.json",
@@ -42,7 +47,20 @@
       [
         "expo-notifications",
         {
-          "color": "#4F7D6B"
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#2563EB"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#F5F8FC",
+          "dark": {
+            "backgroundColor": "#0B1424"
+          }
         }
       ]
     ],
@@ -59,6 +77,7 @@
         "projectId": "da83f22d-d6bb-42f8-b342-3b0d47cb8113"
       }
     },
-    "owner": "soarecems-team"
+    "owner": "soarecems-team",
+    "icon": "./assets/images/icon.png"
   }
 }
