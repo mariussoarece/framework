@@ -3,7 +3,7 @@ import { ScreenBackground } from '../components/ScreenBackground';
 import React, { useCallback, useEffect, useState } from 'react';
 import { KeyboardScroll } from '../components/KeyboardScroll';
 import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Message, Muted, Tabs } from '../components/ui';
 import { Ionicons } from '@expo/vector-icons';
 import { BookingCard } from './BookingCard';
@@ -141,7 +141,12 @@ export function ClientSchedule({ theme, initialTab }: { theme: Theme; initialTab
                   {classes.map((c) => {
                     const full = c.remaining <= 0;
                     return (
-                      <Pressable key={c.starts_at} onPress={() => ask(c)} disabled={full || busy !== null}
+                      <Pressable key={c.starts_at} disabled={busy !== null}
+                        onPress={() => c.availability_id
+                          ? router.push({ pathname: '/class/[id]', params: {
+                              id: c.availability_id, start: c.starts_at, end: c.ends_at,
+                              remaining: String(c.remaining), capacity: String(c.capacity) } })
+                          : (!full ? ask(c) : undefined)}
                         accessibilityRole="button" accessibilityState={{ disabled: full }}
                         style={({ pressed }) => [styles.classRow, { borderColor: full ? theme.border : theme.primary, opacity: pressed || busy === c.starts_at ? 0.6 : 1 }]}>
                         <Text style={[styles.classTime, { color: full ? theme.muted : theme.primary }]}>
@@ -152,11 +157,13 @@ export function ClientSchedule({ theme, initialTab }: { theme: Theme; initialTab
                           <Text style={{ color: theme.muted, fontSize: 14 }}>
                             {[c.instructor ? t('schedule.with', { name: c.instructor }) : '',
                               t('schedule.taken', { booked: c.capacity - c.remaining, capacity: c.capacity }),
-                              c.price_cents > 0 ? formatMoney(c.price_cents, c.currency, language) : '']
+                              c.price_cents > 0 ? formatMoney(c.price_cents, c.currency, language)
+                                + (org?.plan === 'none' ? ` (${t('class.atStudio')})` : '') : '']
                               .filter(Boolean).join('  ·  ')}
                           </Text>
                         </View>
                         {full ? <Text style={styles.full}>{t('schedule.full')}</Text> : null}
+                        <Ionicons name="chevron-forward" size={20} color={theme.muted} />
                       </Pressable>
                     );
                   })}

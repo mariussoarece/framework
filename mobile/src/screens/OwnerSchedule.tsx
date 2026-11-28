@@ -1,7 +1,7 @@
 // Owner: booking requests, upcoming sessions, the week, the timetable (open hours and
 // classes, several days at once, every week or N weeks), and time off (whole days, blocked sessions).
 import { ScreenBackground } from '../components/ScreenBackground';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { KeyboardScroll } from '../components/KeyboardScroll';
 import { Alert, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
@@ -10,6 +10,10 @@ import { Button, Choice, Message, Muted, Tabs } from '../components/ui';
 import { DateField, OptionField, TimeField } from '../components/pickers';
 import { refreshBadge } from '../lib/push';
 import { BookingCard } from './BookingCard';
+import { ClassExtras, type ClassPicture } from './ClassExtras';
+import { editorDoc, type EditorHandle } from '../components/RichEditor';
+import { uploadAsset } from '../lib/upload';
+import type { RichDoc } from '../lib/types';
 import { WeekView } from './WeekView';
 import { useI18n } from '../i18n/I18nProvider';
 import {
@@ -41,6 +45,7 @@ type EntryForm = {
   repeat: 'always' | 'weeks';
   weeks: string;
   startsOn: string;
+  description?: RichDoc | null;   // class: initial text for the editor
 };
 
 const TABS: Tab[] = ['requests', 'upcoming', 'week', 'hours', 'off'];
@@ -56,6 +61,11 @@ export function OwnerSchedule({ theme, initialTab }: { theme: Theme; initialTab?
   const [entries, setEntries] = useState<Availability[]>([]);
   const [daysOff, setDaysOff] = useState<DayOff[]>([]);
   const [form, setForm] = useState<EntryForm | null>(null);
+  // class picture and the description editor (see ClassExtras)
+  const [picture, setPicture] = useState<ClassPicture>({ mediaId: null, picked: null });
+  const editorRef = useRef<EditorHandle | null>(null);
+  const keepEditor = useCallback((e: EditorHandle) => { editorRef.current = e; }, []);
+  const [saving, setSaving] = useState<string | null>(null);
   const [newDay, setNewDay] = useState('');
   const [blockDay, setBlockDay] = useState('');
   const [blockList, setBlockList] = useState<DaySlot[] | null>(null);
@@ -133,7 +143,7 @@ export function OwnerSchedule({ theme, initialTab }: { theme: Theme; initialTab?
     }
     const capacity = positiveInt(form.capacity);
     if (!capacity || capacity > MAX_ATTENDANTS) return setError(t('workout.invalidNumbers'));
-    const price = paid ? (form.price.trim() ? parseMoney(form.price) : 0) : 0;
+    const price = form.price.trim() ? parseMoney(form.price) : 0;
     if (price === null) return setError(t('workout.invalidNumbers'));
     if (!isIsoDate(form.startsOn)) return setError(t('schedule.dayInvalid'));
     let until: string | null = null;
@@ -143,18 +153,34 @@ export function OwnerSchedule({ theme, initialTab }: { theme: Theme; initialTab?
       until = untilForWeeks(form.startsOn, weeks);
     }
     await run(async () => {
-      await saveAvailability({
-        id: form.id, weekdays: form.weekdays, kind: form.kind,
-        title: form.kind === 'class' ? form.title.trim() : null,
-        instructor: form.kind === 'class' ? (form.instructor.trim() || null) : null,
-        start: from, end: to, slot_minutes: length, capacity, price_cents: price,
-        valid_from: form.startsOn, valid_until: until,
-      });
+      const isClass = form.kind === 'class';
+      let imageId: string | null = isClass ? picture.mediaId : null;
+      if (isClass && picture.picked) {
+        setSaving(t('media.uploading', { current: 1, total: 1, percent: 0 }));
+        const row = await uploadAsset(picture.picked, {
+          onProgress: (f) => setSaving(t('media.uploading', { current: 1, total: 1, percent: Math.round(f * 100) })),
+        });
+        imageId = row.id;
+      }
+      const description = isClass && editorRef.current ? await editorDoc(editorRef.current) : null;
+      try {
+        await saveAvailability({
+          id: form.id, weekdays: form.weekdays, kind: form.kind,
+          title: isClass ? form.title.trim() : null,
+          instructor: isClass ? (form.instructor.trim() || null) : null,
+          start: from, end: to, slot_minutes: length, capacity, price_cents: price,
+          valid_from: form.startsOn, valid_until: until,
+          description, image_media_id: imageId,
+        });
+      } finally {
+        setSaving(null);
+      }
       setForm(null);
     });
   }
 
   function editEntry(a: Availability) {
+    setPicture({ mediaId: a.image_media_id ?? null, picked: null });
     setForm({
       id: a.id, kind: a.kind, weekdays: [a.weekday], title: a.title ?? '', instructor: a.instructor ?? '',
       from: shortTime(a.start_time), to: shortTime(a.end_time), length: String(a.slot_minutes),
@@ -163,6 +189,7 @@ export function OwnerSchedule({ theme, initialTab }: { theme: Theme; initialTab?
       repeat: a.valid_until ? 'weeks' : 'always',
       weeks: a.valid_until ? String(weeksBetween(a.valid_from, a.valid_until)) : '4',
       startsOn: a.valid_from,
+      description: a.description ?? null,
     });
   }
 
@@ -318,7 +345,7 @@ export function OwnerSchedule({ theme, initialTab }: { theme: Theme; initialTab?
                     <Choice theme={theme} title={t('schedule.typeOpen')} hint={t('schedule.typeOpenHint')}
                       selected={form.kind === 'open'} onPress={() => setForm({ ...emptyForm('open'), weekdays: form.weekdays })} />
                     <Choice theme={theme} title={t('schedule.typeClass')} hint={t('schedule.typeClassHint')}
-                      selected={form.kind === 'class'} onPress={() => setForm({ ...emptyForm('class'), weekdays: form.weekdays })} />
+                      selected={form.kind === 'class'} onPress={() => { setPicture({ mediaId: null, picked: null }); setForm({ ...emptyForm('class'), weekdays: form.weekdays }); }} />
                   </>
                 ) : null}
 
@@ -347,6 +374,8 @@ export function OwnerSchedule({ theme, initialTab }: { theme: Theme; initialTab?
                       <OptionField flex theme={theme} label={t('schedule.classLength')} value={Number(form.length)} options={SESSION_LENGTHS}
                         format={lengthLabel} onChange={(n) => setForm({ ...form, length: String(n) })} />
                     </View>
+                    <ClassExtras key={form.id ?? 'new'} theme={theme} initialDoc={form.description}
+                      picture={picture} setPicture={setPicture} onEditor={keepEditor} />
                   </>
                 ) : (
                   <>
@@ -365,7 +394,7 @@ export function OwnerSchedule({ theme, initialTab }: { theme: Theme; initialTab?
                   <OptionField flex theme={theme} label={t('schedule.attendants')} value={Number(form.capacity)}
                     options={range1(MAX_ATTENDANTS)} format={(n) => String(n)}
                     onChange={(n) => setForm({ ...form, capacity: String(n) })} />
-                  {paid ? labelled(t('schedule.price'), input(form.price, (v) => setForm({ ...form, price: v }), { numeric: true, placeholder: '30' })) : <View style={{ flex: 1 }} />}
+                  {labelled(t('schedule.price'), input(form.price, (v) => setForm({ ...form, price: v }), { numeric: true, placeholder: '30' }))}
                 </View>
                 {!paid ? <Muted theme={theme}>{t('schedule.priceNone')}</Muted> : null}
 
@@ -385,13 +414,14 @@ export function OwnerSchedule({ theme, initialTab }: { theme: Theme; initialTab?
                   minimum={form.id && form.startsOn < today(tz) ? form.startsOn : today(tz)}
                   onChange={(v) => setForm({ ...form, startsOn: v })} />
 
+                {saving ? <Muted theme={theme}>{saving}</Muted> : null}
                 <View style={styles.pair}>
                   <View style={{ flex: 1 }}><Button theme={theme} kind="secondary" label={t('common.cancel')} onPress={() => { setForm(null); setError(null); }} /></View>
-                  <View style={{ flex: 1 }}><Button theme={theme} label={t('common.save')} onPress={saveForm} /></View>
+                  <View style={{ flex: 1 }}><Button theme={theme} label={t('common.save')} onPress={saveForm} busy={saving !== null} /></View>
                 </View>
               </View>
             ) : (
-              <Button theme={theme} label={t('schedule.addEntry')} onPress={() => setForm(emptyForm('open'))} />
+              <Button theme={theme} label={t('schedule.addEntry')} onPress={() => { setPicture({ mediaId: null, picked: null }); setForm(emptyForm('open')); }} />
             )}
             <Muted theme={theme}>{t('schedule.timezone', { tz })}</Muted>
           </>

@@ -225,6 +225,8 @@ export type Availability = {
   currency: string;
   valid_from: string;         // YYYY-MM-DD
   valid_until: string | null; // null = every week, no end
+  description?: RichDoc | null;       // classes: rich text (migration 021)
+  image_media_id?: string | null;     // classes: picture
 };
 
 export type AvailabilityInput = {
@@ -240,6 +242,8 @@ export type AvailabilityInput = {
   price_cents: number;
   valid_from: string;
   valid_until: string | null;
+  description?: RichDoc | null;
+  image_media_id?: string | null;
 };
 
 export type DayOff = { id: string; organization_id: string; day: string; closed: boolean };
@@ -271,7 +275,14 @@ export async function saveAvailability(a: AvailabilityInput): Promise<void> {
     p_id: a.id ?? null, p_weekdays: a.weekdays, p_kind: a.kind, p_title: a.title, p_instructor: a.instructor,
     p_start: a.start, p_end: a.end, p_slot_minutes: a.slot_minutes, p_capacity: a.capacity,
     p_price_cents: a.price_cents, p_valid_from: a.valid_from, p_valid_until: a.valid_until,
+    p_description: a.description ?? null, p_image_media_id: a.image_media_id ?? null,
   }));
+}
+
+// One timetable entry (e.g. a class, for its details screen).
+export async function getAvailability(id: string): Promise<Availability | null> {
+  const rows = check(await supabase.from('availability').select('*').eq('id', id).limit(1)) as Availability[];
+  return rows[0] ?? null;
 }
 
 export async function deleteAvailability(id: string): Promise<void> {
