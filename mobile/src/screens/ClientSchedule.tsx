@@ -158,7 +158,7 @@ export function ClientSchedule({ theme, initialTab }: { theme: Theme; initialTab
                             {[c.instructor ? t('schedule.with', { name: c.instructor }) : '',
                               t('schedule.taken', { booked: c.capacity - c.remaining, capacity: c.capacity }),
                               c.price_cents > 0 ? formatMoney(c.price_cents, c.currency, language)
-                                + (org?.plan === 'none' ? ` (${t('class.atStudio')})` : '') : '']
+                                + ` (${t('class.atStudio')})` : '']
                               .filter(Boolean).join('  ·  ')}
                           </Text>
                         </View>

@@ -1,11 +1,10 @@
 // Client: a class in detail (picture, name, instructor, when, places, price, description)
 // with the button to book it. Opened from Scheduling > Book.
 import React, { useCallback, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenBackground } from '../../src/components/ScreenBackground';
-import { KeyboardScroll } from '../../src/components/KeyboardScroll';
 import { MediaImage } from '../../src/components/MediaImage';
 import { RichText } from '../../src/components/RichText';
 import { Button, Loading, Message, Muted } from '../../src/components/ui';
@@ -64,7 +63,9 @@ export default function ClassDetails() {
 
   return (
     <ScreenBackground theme={theme}>
-      <KeyboardScroll contentContainerStyle={styles.content} style={{ backgroundColor: 'transparent' }}>
+      {/* "automatic": starts below the see-through header, like the workout screen */}
+      <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ flex: 1, backgroundColor: 'transparent' }}
+        contentContainerStyle={styles.content}>
         <Message text={error} />
         {c ? (
           <>
@@ -78,7 +79,11 @@ export default function ClassDetails() {
             ) : null}
             <View style={styles.line}>
               <Ionicons name="calendar-outline" size={20} color={theme.muted} />
-              <Text style={[styles.info, { color: theme.text }]}>{day} · {time} ({lengthLabel(c.slot_minutes)})</Text>
+              <Text style={[styles.info, { color: theme.text }]}>{day}</Text>
+            </View>
+            <View style={styles.line}>
+              <Ionicons name="time-outline" size={20} color={theme.muted} />
+              <Text style={[styles.info, { color: theme.text }]}>{time}  ·  {lengthLabel(c.slot_minutes)}</Text>
             </View>
             <View style={styles.line}>
               <Ionicons name="people-outline" size={20} color={theme.muted} />
@@ -91,7 +96,7 @@ export default function ClassDetails() {
                 <Ionicons name="pricetag-outline" size={20} color={theme.muted} />
                 <Text style={[styles.info, { color: theme.text }]}>
                   {formatMoney(c.price_cents, c.currency, language)}
-                  {org?.plan === 'none' ? `  ·  ${t('class.paidAtStudio')}` : ''}
+                  {`  ·  ${t('class.paidAtStudio')}`}
                 </Text>
               </View>
             ) : null}
@@ -109,7 +114,7 @@ export default function ClassDetails() {
             <Muted theme={theme}>{t('schedule.timezone', { tz })}</Muted>
           </>
         ) : null}
-      </KeyboardScroll>
+      </ScrollView>
     </ScreenBackground>
   );
 }
