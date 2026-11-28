@@ -23,8 +23,7 @@ import {
 } from '../lib/data';
 import {
   addMinutes, clock, dayKey, dayLabel, formatMoney, isIsoDate, minutesOf, parseMoney, parseTime, shortTime, today,
-  untilForWeeks, WEEK_ORDER, weekdayName, weeksBetween, SESSION_LENGTHS, MAX_ATTENDANTS, MAX_WEEKS, range1, lengthLabel, DEFAULT_LENGTH, MAX_LENGTH,
-} from '../lib/schedule';
+  untilForWeeks, WEEK_ORDER, weekdayName, weeksBetween, SESSION_LENGTHS, MAX_ATTENDANTS, MAX_WEEKS, range1, lengthLabel, DEFAULT_LENGTH, MAX_LENGTH, CURRENCIES } from '../lib/schedule';
 import { positiveInt } from '../lib/format';
 import { useSession } from '../lib/session';
 import type { Theme } from '../theme/themes';
@@ -42,6 +41,7 @@ type EntryForm = {
   length: string;        // session length (open) or class length
   capacity: string;
   price: string;
+  currency: string;
   repeat: 'always' | 'weeks';
   weeks: string;
   startsOn: string;
@@ -73,10 +73,12 @@ export function OwnerSchedule({ theme, initialTab }: { theme: Theme; initialTab?
   const [refreshing, setRefreshing] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
+  // a new entry starts with the currency of the last one, or RON/EUR by the app language
+  const lastCurrency = entries[entries.length - 1]?.currency ?? (language === 'ro' ? 'RON' : 'EUR');
   const emptyForm = (kind: ScheduleKind): EntryForm => ({
     kind, weekdays: [], title: '', instructor: '',
     from: kind === 'class' ? '18:00' : '09:00', to: '17:00', length: String(DEFAULT_LENGTH),
-    capacity: kind === 'class' ? '10' : '1', price: '', repeat: 'always', weeks: '4', startsOn: today(tz),
+    capacity: kind === 'class' ? '10' : '1', price: '', currency: lastCurrency, repeat: 'always', weeks: '4', startsOn: today(tz),
   });
 
   const load = useCallback(async () => {
@@ -170,7 +172,7 @@ export function OwnerSchedule({ theme, initialTab }: { theme: Theme; initialTab?
           instructor: isClass ? (form.instructor.trim() || null) : null,
           start: from, end: to, slot_minutes: length, capacity, price_cents: price,
           valid_from: form.startsOn, valid_until: until,
-          description, image_media_id: imageId,
+          description, image_media_id: imageId, currency: form.currency,
         });
       } finally {
         setSaving(null);
@@ -186,6 +188,7 @@ export function OwnerSchedule({ theme, initialTab }: { theme: Theme; initialTab?
       from: shortTime(a.start_time), to: shortTime(a.end_time), length: String(a.slot_minutes),
       capacity: String(a.capacity),
       price: a.price_cents ? (a.price_cents / 100).toFixed(a.price_cents % 100 ? 2 : 0) : '',
+      currency: a.currency || 'EUR',
       repeat: a.valid_until ? 'weeks' : 'always',
       weeks: a.valid_until ? String(weeksBetween(a.valid_from, a.valid_until)) : '4',
       startsOn: a.valid_from,
@@ -390,11 +393,15 @@ export function OwnerSchedule({ theme, initialTab }: { theme: Theme; initialTab?
                   </>
                 )}
 
+                <OptionField theme={theme} label={t('schedule.attendants')} value={Number(form.capacity)}
+                  options={range1(MAX_ATTENDANTS)} format={(n) => String(n)}
+                  onChange={(n) => setForm({ ...form, capacity: String(n) })} />
                 <View style={styles.pair}>
-                  <OptionField flex theme={theme} label={t('schedule.attendants')} value={Number(form.capacity)}
-                    options={range1(MAX_ATTENDANTS)} format={(n) => String(n)}
-                    onChange={(n) => setForm({ ...form, capacity: String(n) })} />
                   {labelled(t('schedule.price'), input(form.price, (v) => setForm({ ...form, price: v }), { numeric: true, placeholder: '30' }))}
+                  <OptionField flex theme={theme} label={t('schedule.currency')}
+                    value={Math.max(0, CURRENCIES.indexOf(form.currency as never))}
+                    options={CURRENCIES.map((_, i) => i)} format={(i) => CURRENCIES[i]}
+                    onChange={(i) => setForm({ ...form, currency: CURRENCIES[i] })} />
                 </View>
                 {!paid ? <Muted theme={theme}>{t('schedule.priceNone')}</Muted> : null}
 

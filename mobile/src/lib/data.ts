@@ -244,6 +244,7 @@ export type AvailabilityInput = {
   valid_until: string | null;
   description?: RichDoc | null;
   image_media_id?: string | null;
+  currency?: string;
 };
 
 export type DayOff = { id: string; organization_id: string; day: string; closed: boolean };
@@ -276,6 +277,7 @@ export async function saveAvailability(a: AvailabilityInput): Promise<void> {
     p_start: a.start, p_end: a.end, p_slot_minutes: a.slot_minutes, p_capacity: a.capacity,
     p_price_cents: a.price_cents, p_valid_from: a.valid_from, p_valid_until: a.valid_until,
     p_description: a.description ?? null, p_image_media_id: a.image_media_id ?? null,
+    p_currency: a.currency ?? null,
   }));
 }
 

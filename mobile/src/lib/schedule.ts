@@ -25,6 +25,9 @@ export function parseMoney(text: string): number | null {
   return Number(m[1]) * 100 + Number((m[2] ?? '0').padEnd(2, '0'));
 }
 
+// Currencies an owner can choose for a class or open hours (most used first).
+export const CURRENCIES = ['EUR', 'RON', 'USD', 'GBP', 'CHF', 'HUF', 'PLN', 'BGN', 'MDL', 'VND'] as const;
+
 export function formatMoney(cents: number, currency: string, language: Language): string {
   return new Intl.NumberFormat(locale(language), { style: 'currency', currency, minimumFractionDigits: cents % 100 ? 2 : 0 })
     .format(cents / 100);
