@@ -1,7 +1,7 @@
 // Client: a class in detail (picture, name, instructor, when, places, price, description)
 // with the button to book it. Opened from Scheduling > Book.
 import React, { useCallback, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenBackground } from '../../src/components/ScreenBackground';
@@ -29,6 +29,7 @@ export default function ClassDetails() {
   const [c, setC] = useState<Availability | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   // memberships that cover this class, and the client's own
   const [plans, setPlans] = useState<MembershipPlan[]>([]);
   const [mine, setMine] = useState<MembershipRow[]>([]);
@@ -52,6 +53,10 @@ export default function ClassDetails() {
   // the client's active membership that this booking would use
   const using = mine.find((m) => m.status === 'active' && !m.expired && plans.some((p) => p.id === m.plan_id)
     && (m.remaining === null || m.remaining > 0) && m.starts_on! <= day0 && day0 <= m.ends_on!);
+
+  // one membership at a time: none can be requested while one is waiting or still usable
+  const blocking = mine.some((m) => m.status === 'pending'
+    || (m.status === 'active' && !m.expired && (m.remaining === null || m.remaining > 0)));
 
   async function want(p: MembershipPlan) {
     Alert.alert(p.name, t('memberships.wantConfirm', { org: org?.name ?? '' }), [
@@ -100,7 +105,9 @@ export default function ClassDetails() {
     <ScreenBackground theme={theme}>
       {/* "automatic": starts below the see-through header, like the workout screen */}
       <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ flex: 1, backgroundColor: 'transparent' }}
-        contentContainerStyle={styles.content}>
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} tintColor={theme.primary}
+          onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}>
         <Message text={error} />
         {c ? (
           <>
@@ -143,6 +150,8 @@ export default function ClassDetails() {
                   <Text style={{ color: theme.text, fontSize: 15 }}>
                     {t('memberships.usesYours', { name: using.name })} {planText.left(using)}
                   </Text>
+                ) : blocking ? (
+                  <Muted theme={theme}>{t('memberships.oneAtATime')}</Muted>
                 ) : plans.map((p) => {
                   const asked = mine.some((m) => m.plan_id === p.id && m.status === 'pending');
                   return (

@@ -85,6 +85,9 @@ export default function Memberships() {
   }
 
   const pending = rows.filter((m) => m.status === 'pending');
+  // a client can have one membership at a time (waiting, or active with classes left)
+  const blocking = !isOwner && rows.some((m) => m.status === 'pending'
+    || (m.status === 'active' && !m.expired && (m.remaining === null || m.remaining > 0)));
   const current = rows.filter((m) => m.status === 'active' && !m.expired);
   const past = rows.filter((m) => m.status !== 'pending' && !(m.status === 'active' && !m.expired));
   const statusBadge = (m: MembershipRow): [string, 'ok' | 'wait' | 'off'] =>
@@ -96,7 +99,7 @@ export default function Memberships() {
   const h = (s: string) => <Text style={[styles.h, { color: theme.text }]}>{s}</Text>;
 
   return (
-    <Screen header theme={theme}>
+    <Screen header theme={theme} onRefresh={load}>
       <Message text={error} />
       <Muted theme={theme}>{isOwner ? t('memberships.ownerIntro') : t('memberships.clientIntro', { org: org?.name ?? '' })}</Muted>
 
@@ -218,6 +221,7 @@ export default function Memberships() {
           })}
 
           {h(t('memberships.available'))}
+          {blocking && plans.some((p) => p.active) ? <Muted theme={theme}>{t('memberships.oneAtATime')}</Muted> : null}
           {!plans.filter((p) => p.active).length ? <Muted theme={theme}>{t('memberships.noneOffered')}</Muted> : null}
           {plans.filter((p) => p.active).map((p) => {
             const asked = pending.some((m) => m.plan_id === p.id);
@@ -227,7 +231,7 @@ export default function Memberships() {
                 <Text style={{ color: theme.text, fontSize: 15 }}>{text.summary(p.classes, p.valid_days)}</Text>
                 {p.price_cents ? <Muted theme={theme}>{text.price(p.price_cents, p.currency)}</Muted> : null}
                 {p.description ? <Text style={{ color: theme.text }}>{p.description}</Text> : null}
-                <Button theme={theme} label={asked ? t('memberships.requested') : t('memberships.want')} disabled={asked}
+                <Button theme={theme} label={asked ? t('memberships.requested') : t('memberships.want')} disabled={asked || blocking}
                   busy={busy === `r${p.id}`}
                   onPress={() => Alert.alert(p.name, t('memberships.wantConfirm', { org: org?.name ?? '' }), [
                     { text: t('common.cancel'), style: 'cancel' },

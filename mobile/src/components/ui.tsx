@@ -1,7 +1,7 @@
 // Small shared building blocks.
 import React from 'react';
 import {
-  ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet,
+  ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, StyleSheet,
   Text, TextInput, View, type TextInputProps, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,15 +10,23 @@ import { KeyboardScroll } from './KeyboardScroll';
 
 // header: the screen has a navigation header; content must start below it
 // (on newer iOS the header can float over the content).
-export function Screen({ children, theme = DEFAULT_THEME, scroll = true, style, header = false }: {
+// onRefresh: pull the page down to load it again
+export function Screen({ children, theme = DEFAULT_THEME, scroll = true, style, header = false, onRefresh }: {
   children: React.ReactNode; theme?: Theme; scroll?: boolean; style?: ViewStyle; header?: boolean;
+  onRefresh?: () => Promise<unknown> | void;
 }) {
+  const [refreshing, setRefreshing] = React.useState(false);
+  const pull = onRefresh ? async () => {
+    setRefreshing(true);
+    try { await onRefresh(); } finally { setRefreshing(false); }
+  } : undefined;
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}
       edges={header ? ['left', 'right', 'bottom'] : ['top', 'left', 'right', 'bottom']}>
       {scroll ? (
         <KeyboardScroll contentContainerStyle={[styles.content, style]}
-          contentInsetAdjustmentBehavior={header ? 'automatic' : 'never'}>
+          contentInsetAdjustmentBehavior={header ? 'automatic' : 'never'}
+          refreshControl={pull ? <RefreshControl refreshing={refreshing} onRefresh={pull} tintColor={theme.primary} /> : undefined}>
           {children}
         </KeyboardScroll>
       ) : (

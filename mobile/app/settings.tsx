@@ -92,7 +92,7 @@ export default function Settings() {
   ];
 
   return (
-    <Screen header>
+    <Screen header onRefresh={refresh}>
       <Muted>{t('settings.account', { email: session?.user.email ?? '' })}</Muted>
       <Message text={error} />
 

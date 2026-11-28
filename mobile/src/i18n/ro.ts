@@ -174,6 +174,7 @@ export const ro: Record<TextKey, string> = {
   'memberships.noPlansForClass': "Ca să incluzi ora într-un abonament, adaugă mai întâi unul din Setări > Abonamente.",
   'memberships.usesYours': "Această rezervare folosește abonamentul „{name}”:",
   'error.membership_already_requested': "Ai cerut deja acest abonament. Așteaptă răspunsul proprietarului.",
+  'memberships.oneAtATime': "Poți avea un singur abonament o dată. Poți cere altul după ce cel actual se termină sau expiră, ori dacă cererea îți este respinsă.",
   'settings.signOut': 'Deconectare',
   'settings.delete': 'Șterge-mi contul',
   'settings.deleteTitle': 'Ștergi contul?',

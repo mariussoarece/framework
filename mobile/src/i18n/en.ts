@@ -172,6 +172,7 @@ export const en = {
   'memberships.noPlansForClass': "To include this class in a membership, first add one in Settings > Memberships.",
   'memberships.usesYours': "This booking uses your “{name}” membership:",
   'error.membership_already_requested': "You already asked for this membership. Wait for the owner's answer.",
+  'memberships.oneAtATime': "You can have one membership at a time. You can ask for another when the current one is used up or expired, or if your request is declined.",
   'settings.signOut': 'Sign out',
   'settings.delete': 'Delete my account',
   'settings.deleteTitle': 'Delete your account?',

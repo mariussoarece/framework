@@ -18,9 +18,8 @@ export default function Clients() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
 
-  useFocusEffect(useCallback(() => {
-    myClients().then(setRows).catch((err) => setError(tError(err)));
-  }, [tError]));
+  const load = useCallback(() => myClients().then(setRows).catch((err) => setError(tError(err))), [tError]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -34,7 +33,7 @@ export default function Clients() {
   if (!rows && !error) return <Loading theme={theme} />;
 
   return (
-    <Screen header theme={theme}>
+    <Screen header theme={theme} onRefresh={load}>
       <Message text={error} />
       {rows ? <Text style={[styles.total, { color: theme.text }]}>{t('clients.total', { n: rows.length })}</Text> : null}
       {rows && rows.length > 5 ? (

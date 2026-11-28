@@ -53,7 +53,7 @@ export default function Messages() {
   });
 
   return (
-    <Screen header theme={theme}>
+    <Screen header theme={theme} onRefresh={load}>
       {isOwner ? (
         <View style={{ gap: 10 }}>
           <Muted theme={theme}>{t('messages.ownerIntro')}</Muted>

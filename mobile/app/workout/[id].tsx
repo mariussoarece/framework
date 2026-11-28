@@ -2,7 +2,7 @@
 // what to avoid and the warning. The owner gets an Edit button.
 import { ScreenBackground } from '../../src/components/ScreenBackground';
 import React, { useCallback, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { MediaGallery } from '../../src/components/media';
@@ -28,12 +28,13 @@ export default function WorkoutScreen() {
   const [error, setError] = useState<string | null>(null);
   const loadedOnce = useRef(false);
 
-  useFocusEffect(useCallback(() => {
-    (async () => {
+  const [refreshing, setRefreshing] = useState(false);
+  const load = useCallback(async (fresh = false) => {
+    {
       try {
         // reuses the load started when the workout was touched in the list (if any)
         // first visit: reuse it; coming back (e.g. after Edit): fetch fresh
-        const { workout, media: m } = await loadWorkoutPage(id, loadedOnce.current);
+        const { workout, media: m } = await loadWorkoutPage(id, fresh || loadedOnce.current);
         loadedOnce.current = true;
         setW(workout);
         setMedia(m);
@@ -49,8 +50,10 @@ export default function WorkoutScreen() {
       } catch (err) {
         setError(tError(err));
       }
-    })();
-  }, [id, isOwner, navigation, t, tError, theme.primary]));
+    }
+  }, [id, isOwner, navigation, t, tError, theme.primary]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+  const pull = async () => { setRefreshing(true); await load(true); setRefreshing(false); };
 
   if (error) return <View style={{ padding: 20 }}><Message text={error} /></View>;
   if (!w) return <Loading theme={theme} />;
@@ -62,7 +65,8 @@ export default function WorkoutScreen() {
 
   return (
     <ScreenBackground theme={theme}>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ flex: 1, backgroundColor: 'transparent' }} contentContainerStyle={styles.content}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ flex: 1, backgroundColor: 'transparent' }} contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={pull} tintColor={theme.primary} />}>
         <MediaGallery ids={visible} quality={profile?.video_quality ?? 'auto'} theme={theme} />
 
         <Text style={[styles.title, { color: theme.text }]} accessibilityRole="header">{w.name}</Text>

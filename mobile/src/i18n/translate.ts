@@ -69,6 +69,7 @@ export function errorText(language: Language, err: unknown): string {
     too_many_requests: 'error.too_many_requests',
     owner_only: 'error.owner_only',
     membership_already_requested: 'error.membership_already_requested',
+    membership_exists: 'memberships.oneAtATime',
     invalid_currency: 'workout.invalidNumbers',
     message_empty: 'error.message_empty',
     message_too_long: 'error.message_too_long',
